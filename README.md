@@ -13,7 +13,10 @@ before extending it.
 No build step. `python -m http.server` (or any static server) in this folder, or just open `index.html`
 directly, and open it in a browser. The default graph is already wired up: **On Key Press → Give Cash →
 Toast Message → Spawn Ahead**, with a **Random Number** node feeding Spawn Ahead's distance instead of a
-fixed value. Hit **Compile** to see the generated Lua, **Download .lua** to save it.
+fixed value — one of 5 boilerplate starting points under **Load a boilerplate sample** (`src/samples.js`).
+Hit **Compile** to see the generated Lua, **Download .lua** to save it, or **Connect** (lua-bridge on the
+running game) and hit **Run in game** to send the compiled script straight over and watch the exec chain
+light up on canvas as it goes (`src/bridge.js` / `src/runviz.js`).
 
 ## The model: two kinds of wire, and neither one is "real" at compile time
 
@@ -70,25 +73,37 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-five namespace-grouped files added in a second pass, ~60 nodes total covering most of Ess's **Easy tier**:
+seven namespace-grouped files added across two later passes, **77 nodes total** covering the great
+majority of Ess's **Easy tier** — every `Ess.Easy.*` function has a node now, with two narrow, documented
+exceptions (below):
 
 | File | Covers |
 |---|---|
 | `src/nodes-world.js` | `Easy.Vehicle`, `Easy.Spawn`, `Easy.World`, `Easy.Fun` |
-| `src/nodes-player.js` | `Easy.Player`, `Easy.Human`, `Easy.Debug` (+ a `Player.character` data node) |
+| `src/nodes-player.js` | `Easy.Player`, `Easy.Human`, `Easy.Debug` (+ `Player.character`/`Debug.isOn` data nodes) |
 | `src/nodes-markers-camera.js` | `Easy.Mark`, `Easy.Camera`, `Easy.Sound`, `Easy.Confirm` |
 | `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike` |
 | `src/nodes-missions.js` | `Easy.Objective`, `Easy.Quest`, `Easy.Contract`, `Easy.Sandbox` |
+| `src/nodes-cinematic.js` | `Easy.Cinematic.play` (declarative cutscene timelines) |
+| `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers` |
 
-**Still genuinely small next to Ess's full surface.** This is Easy-tier only — none of Core or Raw tier is
-represented (by design; Easy is the one-liner tier this node model fits best), and even within Easy tier,
-`Ess.Easy.Triggers.*` (`onPlayerNear`/`onDeath`/`after`) and every `onDone`/`onFail`/`onComplete` callback
-parameter across `Objective`/`Contract`/`Quest`/`Confirm` are deliberately not wired up — all of those take
-a Lua callback, and this compiler only assembles a flat sequence of statements right now. `Ess.Easy.Confirm`
-is implemented but only fires both its "yes" and "no" exec outputs immediately at compile time as a
-documented placeholder (see `nodes-markers-camera.js`) rather than actually branching on the in-game
-answer. Wiring real callback bodies through would need the compiler to support nesting emitted code inside
-a generated closure — a real, separate piece of work, not a template tweak.
+**Still Easy-tier only** — none of Core or Raw tier is represented (by design; Easy is the one-liner tier
+this node model fits best).
+
+**Callback parameters** (`Confirm`'s `onYes`/`onNo`, `Triggers.*`'s `fn`, `Menu`'s `entries` actions, every
+`onDone`/`onFail`/`onComplete` across `Objective`/`Quest`) are modeled as raw Lua-source **text** properties
+— the same "data is Lua source text" convention table/list params already use (see `codegen.js`'s header) —
+rather than visually-wired exec branches. An earlier version of `Confirm` tried the opposite: two EVENT
+outputs that both fired immediately at compile time, which produced Lua where the real callback was an
+empty no-op while anything wired after the output ran unconditionally at call time, not when the callback
+actually fired. Text is less visual, but it compiles to exactly what it shows; wiring real visual nodes
+*inside* a callback would need the compiler to support nesting emitted code inside a generated closure — a
+real, separate piece of work, not a template tweak.
+
+**Two deliberate exceptions**, both genuinely not callback-shaped and out of scope for the reason given:
+`Ess.Easy.Cinematic.shot` (sugar for building one entry of a `steps` list you're already hand-typing — see
+`nodes-cinematic.js`) and `Contract`/`Sandbox`'s `opts` tables (nil-safe with no callback inside — see
+`nodes-missions.js`).
 
 ## What's deliberately not here yet
 
@@ -96,9 +111,8 @@ a generated closure — a real, separate piece of work, not a template tweak.
   both discussed as natural next steps — same node library, different compiler backends (OnKey-style
   toggle state needs `Ess.State`, an HTML button's toggle state is just a JS variable, and anything reading
   live game data from a browser is async in a way nothing in-game ever is).
-- **Callback-shaped calls** — see "Node coverage" above.
-- **No save/load.** The example graph is rebuilt in code (`src/app.js`) every page load; there's no
-  project-file persistence yet.
+- **No save/load for a custom graph.** The 5 boilerplate samples (`src/samples.js`) are rebuilt in code
+  every time you load one; there's no project-file persistence for a graph you've built/modified yourself.
 - **No data-node-to-data-node chains in the compiler.** `compiler.js`'s pre-pass runs every data node
   once, in whatever order `graph._nodes` returns; a data node that reads another data node's output would
   need a real topological sort first. Not needed for anything in this draft's node set.
@@ -111,8 +125,9 @@ a generated closure — a real, separate piece of work, not a template tweak.
 ## Credit
 
 `lib/litegraph.js` / `lib/litegraph.css` are vendored, unmodified, from
-[jagenjo/litegraph.js](https://github.com/jagenjo/litegraph.js) (MIT). `lib/tokens.css` is vendored from
-this ecosystem's own `mercs2-tools-shared` (local-only, not yet published).
+[jagenjo/litegraph.js](https://github.com/jagenjo/litegraph.js) (MIT). `lib/tokens.css` and
+`lib/bridge-client.js` are vendored from this ecosystem's own
+[mercs2-tools-shared](https://github.com/loganw234/mercs2-tools-shared).
 
 ## License
 

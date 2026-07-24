@@ -181,30 +181,80 @@
   // ============================================================
   // Ess/ui/confirm -- Ess.Easy.Confirm(text, onYes, onNo)
   //
-  // Architecturally different from every other node in this file: TWO independent exec outputs ("yes" and
-  // "no") instead of one "then", since litegraph nodes can have multiple independent EVENT outputs, each
-  // triggered separately.
-  //
-  // Ess.Easy.Confirm's onYes/onNo are Lua CALLBACKS -- this node can't nest a downstream exec chain INSIDE
-  // those callbacks with the current flat-statement compiler (compiler.js just collects a flat list of
-  // emitted lines; it doesn't support nesting emitted code inside a generated closure yet). So: emit the
-  // Confirm call with EMPTY inline callbacks for now, and separately trigger both output slots immediately
-  // after, as a documented simplification -- NOT how it'll really behave in-game (both branches "fire" here
-  // for previewing/compiling purposes, but only one runs when the real dialog is actually answered).
+  // onYes/onNo are Lua CALLBACKS -- modeled as raw Lua-source TEXT properties, the same "data is Lua
+  // source text" convention guids/points/factions lists already use throughout this repo (see codegen.js
+  // header), spliced in as literal function bodies rather than represented as separate visually-wired exec
+  // branches. An earlier version of this node instead gave itself two EVENT outputs ("yes"/"no") that both
+  // fired immediately during compile -- that produced Lua where the REAL onYes/onNo were empty no-ops
+  // while anything wired after "yes"/"no" in the graph ran unconditionally at Confirm-call time, not when
+  // the dialog was actually answered. Less visual, but this way the generated code actually does what the
+  // node shows. onNo is optional in the real function (default: do nothing) -- blank here emits `nil`.
   // ============================================================
   function ConfirmPrompt() {
     this.addInput("exec", LiteGraph.ACTION);
-    this.addOutput("yes", LiteGraph.EVENT);
-    this.addOutput("no", LiteGraph.EVENT);
+    this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("text", "Are you sure?");
     this.addWidget("text", "text", this.properties.text, function (v) { this.properties.text = v; }.bind(this));
+    this.addProperty("onYes", "function() end");
+    this.addWidget("text", "onYes", this.properties.onYes, function (v) { this.properties.onYes = v; }.bind(this));
+    this.addProperty("onNo", "");
+    this.addWidget("text", "onNo (blank = none)", this.properties.onNo, function (v) { this.properties.onNo = v; }.bind(this));
   }
   ConfirmPrompt.title = "Confirm Prompt";
-  ConfirmPrompt.desc = "Ess.Easy.Confirm(text, onYes, onNo) -- yes/no branches not yet wired into callbacks, see comment above";
+  ConfirmPrompt.desc = "Ess.Easy.Confirm(text, onYes, onNo) -- onYes/onNo are raw Lua function-literal text, not wired branches";
   ConfirmPrompt.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Confirm(" + CodeGen.luaString(this.properties.text) + ", function() end, function() end)  -- TODO: yes/no branches not yet wired into the generated callbacks, see nodes-markers-camera.js");
-    this.triggerSlot(0); // yes
-    this.triggerSlot(1); // no
+    var onNo = (this.properties.onNo && this.properties.onNo.trim()) ? this.properties.onNo : "nil";
+    CodeGen.emit("Ess.Easy.Confirm(" + CodeGen.luaString(this.properties.text) + ", " + this.properties.onYes + ", " + onNo + ")");
+    this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/ui/confirm", ConfirmPrompt);
+
+  // ============================================================
+  // Ess/Camera/FadeOut -- Ess.Easy.Camera.fadeOut(). No args -- full-screen fade to black.
+  // ============================================================
+  function CameraFadeOut() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+  }
+  CameraFadeOut.title = "Camera Fade Out";
+  CameraFadeOut.desc = "Ess.Easy.Camera.fadeOut()";
+  CameraFadeOut.prototype.onAction = function () {
+    CodeGen.emit("Ess.Easy.Camera.fadeOut()");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/camera/fadeout", CameraFadeOut);
+
+  // ============================================================
+  // Ess/Camera/FadeIn -- Ess.Easy.Camera.fadeIn(). No args -- full-screen fade back in from black.
+  // ============================================================
+  function CameraFadeIn() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+  }
+  CameraFadeIn.title = "Camera Fade In";
+  CameraFadeIn.desc = "Ess.Easy.Camera.fadeIn()";
+  CameraFadeIn.prototype.onAction = function () {
+    CodeGen.emit("Ess.Easy.Camera.fadeIn()");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/camera/fadein", CameraFadeIn);
+
+  // ============================================================
+  // Ess/Camera/Shake -- Ess.Easy.Camera.shake(i) -- zero-config screen shake for player i.
+  // ============================================================
+  function CameraShake() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("i", "number");
+    this.addProperty("i", 0);
+    this.addWidget("number", "i", this.properties.i, function (v) { this.properties.i = v; }.bind(this));
+  }
+  CameraShake.title = "Camera Shake";
+  CameraShake.desc = "Ess.Easy.Camera.shake(i)";
+  CameraShake.prototype.onAction = function () {
+    var i = CodeGen.resolveNumberInput(this, 1, "i");  // input 0 is "exec"
+    CodeGen.emit("Ess.Easy.Camera.shake(" + i + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/camera/shake", CameraShake);
 })();

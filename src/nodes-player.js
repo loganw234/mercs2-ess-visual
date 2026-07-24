@@ -201,4 +201,19 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/debug/hide", DebugHide);
+
+  // ============================================================
+  // Ess/Debug/IsOn -- a PURE DATA node wrapping Ess.Easy.Debug.isOn() -> bool. Same "emit source text" idea
+  // as Player Character above -- nothing here queries the live game at compile time, it just emits the
+  // call expression for whatever consumes this boolean output to splice in.
+  // ============================================================
+  function DebugIsOn() {
+    this.addOutput("isOn", "boolean");
+  }
+  DebugIsOn.title = "Debug: Is Overlay On";
+  DebugIsOn.desc = "Ess.Easy.Debug.isOn() -- emits Lua source, not a resolved boolean (see codegen.js header)";
+  DebugIsOn.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Easy.Debug.isOn()");
+  };
+  LiteGraph.registerNodeType("ess/debug/ison", DebugIsOn);
 })();

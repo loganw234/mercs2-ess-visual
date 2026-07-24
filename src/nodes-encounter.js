@@ -6,9 +6,9 @@
  * spliced verbatim into the generated call -- never through CodeGen.luaString, since the text already IS
  * Lua code, not a string to be quoted (same "data is Lua source text" model RandomNumber uses in nodes.js).
  *
- * SKIPPED ON PURPOSE: Ess.Easy.Triggers.* (onPlayerNear/onDeath/after) are NOT included in this pass --
- * they take completion callbacks (fn), which needs a second kind of trigger-root node plus nested-closure
- * codegen this compiler doesn't support yet. Out of scope here; not an oversight.
+ * Ess.Easy.Triggers.* (onPlayerNear/onDeath/after) live in nodes-utility.js, not here -- their `fn`
+ * callback is modeled as raw Lua-source text (same convention as the lists above), not a second kind of
+ * trigger-root node with nested-closure codegen.
  */
 (function () {
   "use strict";
