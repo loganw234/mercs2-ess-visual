@@ -358,23 +358,47 @@
   // fires its handler ONCE, not every frame. CAVEAT (from src/25_keys.lua): this reads the same input buffer
   // Ess.UI's focused widgets read -- don't bind Ess.Keys AND a focused Ess.UI.Menu to the same keys at once.
   //
-  // `handler` is raw Lua function-literal text, same "data is Lua source text" convention every other
-  // callback param in this file uses (see the file header) -- fn(bShift), so a Shift+key combo is available
-  // as the handler's own parameter, not a separate node.
+  // TWO ways to say what happens on a press, prefer the first:
+  //   1. Wire "on press" to a real exec chain -- captured into its own scope (the SAME pushScope()/
+  //      popScope() mechanism Branch's true/false and every Function Block body already use) and wrapped
+  //      in `function(shift) ... end` at emit time, so the actual behavior is real, wired, visible nodes,
+  //      not text. A held key firing that chain as a normal EVENT->ACTION link (like "then" below) would
+  //      run it immediately at COMPILE time instead of waiting for the real keypress -- the exact bug this
+  //      file's Confirm-node history already proves (see nodes-markers-camera.js's Confirm Prompt) -- so
+  //      "on press" is walked through pushScope() specifically to defer it, exactly like Branch's outputs.
+  //   2. Leave "on press" unwired and just type `call` -- a raw Lua statement, auto-wrapped the same way.
+  //      Only used as a fallback when nothing's wired to "on press"; fine for a one-liner, but for
+  //      anything with real logic worth seeing, wire in the real nodes (a Function Block's "Call: name"
+  //      node, generated per src/nodes-function-calls.js, is a natural thing to wire "on press" straight
+  //      into -- its exec input accepts an EVENT output same as any other action node's).
+  // Reference `shift` directly (in `call`, or in a wired node's own raw-text fields) for a Shift+key combo.
   // ============================================================
   function KeysOn() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("key", "F6");
     this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
-    this.addProperty("handler", "function(shift) Ess.Log('key pressed') end");
-    this.addWidget("text", "handler", this.properties.handler, function (v) { this.properties.handler = v; }.bind(this));
-    this.size = [240, 100];
+    this.addProperty("call", "Ess.Log('key pressed')");
+    this.addWidget("text", "call", this.properties.call, function (v) { this.properties.call = v; }.bind(this));
+    this.addOutput("on press", LiteGraph.EVENT);
+    this.size = [240, 120];
   }
   KeysOn.title = "Keys: On";
-  KeysOn.desc = "Ess.Keys.on(key, fn) -- binds a key inside THIS script (independent of the file's own OnKey binding); fn is raw Lua function-literal text, fn(bShift), see file header";
+  KeysOn.desc = "Ess.Keys.on(key, function(shift) ... end) -- binds a key inside THIS script (independent of the file's own OnKey binding). Wire \"on press\" to a real exec chain for what happens each press (preferred, see file header); `call` (raw Lua) is only used when nothing's wired there.";
   KeysOn.prototype.onAction = function () {
-    CodeGen.emit("Ess.Keys.on(" + CodeGen.luaString(this.properties.key) + ", " + this.properties.handler + ")");
+    var key = CodeGen.luaString(this.properties.key);
+    var onPressSlot = this.outputs[1];
+    var isWired = onPressSlot && onPressSlot.links && onPressSlot.links.length > 0;
+    if (isWired) {
+      CodeGen.pushScope();
+      this.triggerSlot(1);
+      var bodyLines = CodeGen.popScope();
+      CodeGen.emit("Ess.Keys.on(" + key + ", function(shift)");
+      CodeGen.emitLines(bodyLines);
+      CodeGen.emit("end)");
+    } else {
+      CodeGen.emit("Ess.Keys.on(" + key + ", function(shift) " + this.properties.call + " end)");
+    }
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/keys/on", KeysOn);

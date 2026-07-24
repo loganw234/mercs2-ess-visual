@@ -9,13 +9,19 @@
  *   src/97_easy_debug.lua    -- Ess.Easy.Debug.*
  *   src/10_player.lua        -- Ess.Player.* (Core tier, added in a later pass)
  *
- * Ess.Player.pose/slot/viewYaw are NOT covered here -- pose/viewYaw return more than one meaningfully
- * distinct value (x,y,z,yaw,char,slot / angle,bool) with no single obviously-primary one, which doesn't
- * fit this repo's one-output-per-data-node model; slot() returns an opaque native player handle with no
- * standalone value to a mod script. targetUnderReticle DOES return multiple values (g,x,y,z) but follows
- * the SAME "own convention puts the guid first" the real function's doc comment already establishes, so
- * it's modeled here the same way Player Character is: emit the call expression, let Lua's normal
- * single-value-context truncation take just the guid wherever this output gets spliced in.
+ * Ess.Player.slot/viewYaw are NOT covered here -- slot() returns an opaque native player handle with no
+ * standalone value to a mod script, and viewYaw's second return (a bool) has no clear use on its own.
+ * targetUnderReticle returns multiple values (g,x,y,z) but follows the SAME "own convention puts the guid
+ * first" the real function's doc comment already establishes, so it's modeled the same way Player Character
+ * is: emit the call expression, let Lua's normal single-value-context truncation take just the guid wherever
+ * this output gets spliced in.
+ *
+ * Ess.Player.pose WAS skipped for the same "more than one meaningfully distinct value, no single primary
+ * one" reason -- Player: Get Position below covers it anyway, using the multi-value CAPTURE pattern this
+ * session's Vehicle: Enter Seat Excluding / native Object: Attach established for exactly this shape: an
+ * ACTION node (not pure-data -- capturing needs CodeGen.emitCapture, only valid inside onAction) that emits
+ * `local x, y, z, yaw = Ess.Player.pose(i)` once and exposes all four as separate outputs, rather than
+ * trying to force a 4-value return through a single-output pure-data node.
  */
 (function () {
   "use strict";
@@ -36,6 +42,37 @@
     this.setOutputData(0, "Ess.Player.character(" + this.properties.playerIndex + ")");
   };
   LiteGraph.registerNodeType("ess/player/character", PlayerCharacter);
+
+  // ============================================================
+  // Ess/Player/GetPosition -- local x, y, z, yaw = Ess.Player.pose(i), captured once and exposed as four
+  // separate outputs (see file header for why this is an ACTION node, not pure-data, unlike every other
+  // Player getter in this file).
+  // ============================================================
+  function PlayerGetPosition() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("playerIndex", 0);
+    this.addWidget("number", "playerIndex", this.properties.playerIndex, function (v) { this.properties.playerIndex = v; }.bind(this));
+    this.addOutput("x", "string");
+    this.addOutput("y", "string");
+    this.addOutput("z", "string");
+    this.addOutput("yaw", "string");
+  }
+  PlayerGetPosition.title = "Player: Get Position";
+  PlayerGetPosition.desc = "local x, y, z, yaw = Ess.Player.pose(i) -- captured once, all four exposed separately -> x, y, z, yaw";
+  PlayerGetPosition.prototype.onAction = function () {
+    var xVar = CodeGen.newLocal("px");
+    var yVar = CodeGen.newLocal("py");
+    var zVar = CodeGen.newLocal("pz");
+    var yawVar = CodeGen.newLocal("pyaw");
+    CodeGen.emit("local " + xVar + ", " + yVar + ", " + zVar + ", " + yawVar + " = Ess.Player.pose(" + this.properties.playerIndex + ")");
+    this.setOutputData(1, xVar);
+    this.setOutputData(2, yVar);
+    this.setOutputData(3, zVar);
+    this.setOutputData(4, yawVar);
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/player/getposition", PlayerGetPosition);
 
   // ============================================================
   // Ess/Player/GiveGrapplingHook -- Ess.Easy.Player.giveGrapplingHook(), no args.

@@ -260,7 +260,7 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-ten namespace-grouped files added across three later passes, **168 nodes total** — every `Ess.Easy.*`
+ten namespace-grouped files added across three later passes, **169 nodes total** — every `Ess.Easy.*`
 function has a node (two narrow, documented exceptions below), plus a wide slice of the **Core** tier
 (the direct `Ess.*` namespaces, not just their `Easy` wrappers) for the namespaces modders touch most:
 
@@ -290,14 +290,22 @@ Easy/Core, e.g. `Ess.Raw.Impulse.*` — isn't separately represented; the **Nati
 even that, straight to the bare engine.)
 
 **Callback parameters** (`Confirm`'s `onYes`/`onNo`, `Triggers.*`'s `fn`, `Menu`'s `entries` actions, every
-`onDone`/`onFail`/`onComplete` across `Objective`/`Quest`) are modeled as raw Lua-source **text** properties
-— the same "data is Lua source text" convention table/list params already use (see `codegen.js`'s header) —
-rather than visually-wired exec branches. An earlier version of `Confirm` tried the opposite: two EVENT
-outputs that both fired immediately at compile time, which produced Lua where the real callback was an
-empty no-op while anything wired after the output ran unconditionally at call time, not when the callback
-actually fired. Text is less visual, but it compiles to exactly what it shows; wiring real visual nodes
-*inside* a callback would need the compiler to support nesting emitted code inside a generated closure — a
-real, separate piece of work, not a template tweak.
+`onDone`/`onFail`/`onComplete` across `Objective`/`Quest`) are still modeled as raw Lua-source **text**
+properties — the same
+"data is Lua source text" convention table/list params already use (see `codegen.js`'s header) — rather than
+visually-wired exec branches. An earlier version of `Confirm` tried the opposite: two EVENT outputs that
+both fired immediately at compile time, which produced Lua where the real callback was an empty no-op while
+anything wired after the output ran unconditionally at call time, not when the callback actually fired.
+
+**`Keys: On` (`src/nodes-utility.js`) is the one callback-shaped node that now DOES support a real wired
+chain**, via a second EVENT output ("on press", alongside the usual "then") captured through the exact same
+`CodeGen.pushScope()`/`popScope()` mechanism Branch's true/false already use: whatever's wired to "on press"
+compiles into its own isolated scope, and THAT gets wrapped in `function(shift) ... end` at emit time instead
+of inlined immediately — the "nesting emitted code inside a generated closure" this section used to call out
+as unsolved. Left unwired, `Keys: On` falls back to its `call` text property (a single raw statement,
+auto-wrapped the same way) for a quick one-liner. This is a real pattern now, not just a possibility — the
+other callback-shaped nodes above (`Confirm`, `Triggers.*`, `Menu`, `Objective`/`Quest`) could adopt the same
+"wired output, falls back to text" shape; only `Keys: On` has been converted so far.
 
 **Two deliberate exceptions**, both genuinely not callback-shaped and out of scope for the reason given:
 `Ess.Easy.Cinematic.shot` (sugar for building one entry of a `steps` list you're already hand-typing — see
@@ -359,7 +367,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 375 static node types** (168 Ess + 193 Native + 14 Flow Control), plus one dynamically-
+**Grand total: 376 static node types** (169 Ess + 193 Native + 14 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet
