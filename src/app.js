@@ -17,6 +17,7 @@
   window.addEventListener("resize", resize);
 
   Samples.load("cash-and-ride", graph); // the default starting graph -- see samples.js for this + 4 others
+  FunctionCalls.rescan(graph); // registers a "Call: name" type for every Function Start already in the graph -- before Palette.render so they show up in the initial sidebar too
   resize();
   graph.start(); // litegraph's own render/interaction loop -- NOT what runs our compile step (see compiler.js)
   Palette.render(graph, canvas); // left sidebar node browser -- see palette.js (also trims litegraph's stock nodes)
@@ -38,6 +39,8 @@
       return;
     }
     Samples.load(sample.id, graph);
+    FunctionCalls.rescan(graph);
+    Palette.refresh();
     sampleHint.textContent = sample.desc;
     graph.setDirtyCanvas(true, true);
     doCompile();
@@ -48,6 +51,11 @@
   var statusEl = document.getElementById("status");
 
   function doCompile() {
+    // Rescanning here (not just on sample load) means compiling always reflects the CURRENT params/
+    // returns on every Function Start, even mid-edit -- see nodes-function-calls.js's header for why an
+    // already-PLACED Call node instance doesn't retroactively resize, though; only new drops pick it up.
+    FunctionCalls.rescan(graph);
+    Palette.refresh();
     var result = Compiler.compile(graph, { scriptName: "GraphOutput" });
     if (!result.ok) {
       codeEl.textContent = "";

@@ -96,7 +96,55 @@ All the comparison/boolean/arithmetic nodes are pure-data, same "emit an express
 value" model as Random Number — chaining one into another (e.g. two `Compare`s into one `And`) works
 whenever the upstream node happens to execute first in the pre-pass, but isn't guaranteed by construction
 (see "What's deliberately not here yet" below) — keep chains shallow until that gets a real topological
-sort.
+sort. (Also `flow/*`, but substantial enough for their own section: **Function Start**, **Function
+Return**, and dynamically-generated **Call** nodes — see "Function blocks" below.)
+
+## Function blocks
+
+Reusable, parameterized functions — the piece that turns "a sequence of one-liners" into something closer
+to a real program. Two static node types (`src/nodes-function.js`) plus one dynamically-generated node
+type per function you actually define (`src/nodes-function-calls.js`).
+
+**Function Start** marks a function's entry point — name it, list its `params` and its `returns` (both
+comma-separated text, e.g. `targetGuid, amount`). Its param names become real output pins, each carrying
+its own literal name as Lua text (referencing `targetGuid` inside the function body IS the real bound
+local, once compiled — like every other data wire here, it's never a computed value, see `codegen.js`'s
+header). Its `returns` declaration is the single source of truth for what a **Function Return** node inside
+this function is allowed to return, and what a **Call: name** node's output pins look like elsewhere in the
+graph.
+
+**Function Return** ends execution with `return a, b, ...` — a function can have several of these (one per
+early-return branch), each independently declaring its own `returns` list, checked against its owning
+Function Start's `returns` at COMPILE TIME, not live-synced in the UI. (Several Return nodes tracking one
+Start node's property live would need real cross-node event wiring for a benefit a clear compile error
+covers just as well — see the file's own header for the full reasoning.)
+
+**Call: name** nodes don't exist until you've defined a function — `FunctionCalls.rescan(graph)` scans the
+CURRENT graph for every Function Start and registers a matching `flow/call/<name>` type (params as inputs,
+returns as outputs, both with the same typed-default-or-wire pattern every other data slot in this tool
+has, not a wire-only pin with no way to type a literal). This runs after every sample load and right before
+every compile, so compiling always reflects each function's current signature — but an ALREADY-PLACED Call
+node instance doesn't retroactively resize if you edit that function afterward (litegraph has no live pin
+migration for an existing instance when its type re-registers); delete and re-drop it to pick up the new
+signature. A real, documented limitation, not a bug — not worth solving properly for a draft tool.
+
+Compiling gets a new pass, ahead of the main trigger walk: every Function Start's own chain compiles into
+its own `local function name(params) ... end` block (the same `CodeGen.pushScope()`/`popScope()` mechanism
+Branch already uses), assembled once regardless of how many Call nodes reference it — a Call node never
+re-walks into the callee's own definition at compile time, it just emits a plain `name(args)` expression,
+so a function calling itself (real Lua recursion) is completely safe here. Two new compiler guardrails
+alongside the existing key/cycle ones: every Function Start needs a unique name, and every reachable
+Function Return's `returns` must match its own Start's — both fail the compile with a clear error instead
+of silently producing a broken or wrong-shaped function.
+
+**Why inline, on the same canvas, rather than a separate mini-graph you switch into**: litegraph actually
+ships its own general-purpose Subgraph system (`graph/subgraph`, `graph/input`, `graph/output`) that looks
+like a shortcut here, but it's built for litegraph's own continuous dataflow execution (`graph.runStep()`)
+— something this tool never uses at all, since everything here compiles once via `Compiler.compile()`'s own
+one-shot walk instead. Adopting it would mean fighting a large subsystem built for a different execution
+model. Building Function Start/Return/Call from scratch, living on the same graph the rest of the script
+already does, reuses the exact single-graph compile pass already in place and needed no new
+graph-switching UI.
 
 **Compiler guardrails**, both new checks in `compile()` before anything is emitted: a compiled script binds
 to exactly one key (`KEYVAL`, declared once for the OnKey loader), so multiple `On Key Press` nodes with
@@ -241,7 +289,8 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 369 nodes** (164 Ess + 193 Native + 12 Flow Control).
+**Grand total: 371 static node types** (164 Ess + 193 Native + 14 Flow Control), plus one dynamically-
+generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet
 

@@ -112,16 +112,23 @@
     var listEl = document.getElementById("palette");
     var searchEl = document.getElementById("paletteSearch");
     var countEl = document.getElementById("paletteCount");
-    var byCat = collectCategories();
-    var catNames = Object.keys(byCat).sort(function (a, b) {
-      if (a === "General") return -1;
-      if (b === "General") return 1;
-      return a < b ? -1 : a > b ? 1 : 0;
-    });
+    var byCat = {};
+    var catNames = [];
 
-    var total = 0;
-    catNames.forEach(function (c) { total += byCat[c].length; });
-    countEl.textContent = total + " nodes / " + catNames.length + " categories";
+    // Re-reads LiteGraph.registered_node_types and recolors the count/category list -- called once below
+    // at initial render, and again via the exposed refresh() whenever node TYPES themselves change after
+    // load (currently just nodes-function-calls.js's dynamically-generated "Call: name" types; see there).
+    function recomputeCategories() {
+      byCat = collectCategories();
+      catNames = Object.keys(byCat).sort(function (a, b) {
+        if (a === "General") return -1;
+        if (b === "General") return 1;
+        return a < b ? -1 : a > b ? 1 : 0;
+      });
+      var total = 0;
+      catNames.forEach(function (c) { total += byCat[c].length; });
+      countEl.textContent = total + " nodes / " + catNames.length + " categories";
+    }
 
     function addNodeToCanvas(type) {
       var node = LiteGraph.createNode(type);
@@ -172,8 +179,20 @@
     }
 
     searchEl.addEventListener("input", function () { buildList(searchEl.value); });
+    recomputeCategories();
     buildList("");
+
+    return {
+      refresh: function () {
+        recomputeCategories();
+        buildList(searchEl.value);
+      }
+    };
   }
 
-  window.Palette = { render: render };
+  var instance = null;
+  window.Palette = {
+    render: function (graph, canvas) { instance = render(graph, canvas); },
+    refresh: function () { if (instance) instance.refresh(); }
+  };
 })();

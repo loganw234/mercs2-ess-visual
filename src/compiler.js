@@ -1,11 +1,21 @@
 /* compiler.js -- turns the current graph into a real scripts/OnKey/*.lua file.
  *
- * Two passes, deliberately in this order:
+ * Three passes, deliberately in this order:
  *   1. Every pure-data node (has onExecute, no ACTION input -- e.g. Random Number) runs once, populating
  *      its output via setOutputData. These never depend on each other in this draft, so a single flat
  *      pass is enough; a graph with data-node-to-data-node chains would need a real topological sort here
- *      instead (out of scope for this draft -- see README's "what's deliberately not done yet").
- *   2. Every trigger node (isTriggerNode === true, e.g. On Key Press) fires once via its own fireOnce(),
+ *      instead (out of scope for this draft -- see README's "what's deliberately not done yet"). This
+ *      pass covers data nodes inside a function body too (see below) -- it's a flat sweep over every node
+ *      in the graph, not scoped to any one chain.
+ *   2. Every Function Start node (isFunctionStartNode === true -- see nodes-function.js) fires once via
+ *      the SAME fireOnce()/triggerSlot(0) mechanism triggers use, but with CodeGen.pushScope()/popScope()
+ *      wrapped around it (the same mechanism Flow/Branch uses for its true/false chains) so its body is
+ *      captured separately and wrapped in `local function name(params) ... end`, assembled into its own
+ *      buffer BEFORE the main trigger walk below runs. A Call node elsewhere in the graph never re-walks
+ *      into the function's own chain at compile time -- it just emits a plain `name(args)` call expression
+ *      (see nodes-function-calls.js) -- so a function calling itself (real Lua recursion) is completely
+ *      safe here: the body is compiled exactly once regardless of how many Call nodes reference it.
+ *   3. Every trigger node (isTriggerNode === true, e.g. On Key Press) fires once via its own fireOnce(),
  *      which synchronously walks the whole onAction -> triggerSlot -> onAction chain via litegraph's own
  *      event-propagation machinery -- this compiler doesn't re-implement graph traversal, it just kicks
  *      litegraph's real one off once per trigger and lets CodeGen collect whatever each node emits.
@@ -41,7 +51,11 @@ window.Compiler = (function () {
   // graph has a few branches (Flow/Branch's true/false, a node with fan-out to multiple downstream chains
   // that reconverge). Standard white/gray/black DFS: only revisiting a node still GRAY (on the CURRENT
   // path) is a cycle -- two different branches legitimately reconverging on the same downstream node later
-  // is fine, that's just shared reuse, not a loop.
+  // is fine, that's just shared reuse, not a loop. `triggers` here means "every chain root fireOnce() gets
+  // called on" -- both real On Key Press triggers AND Function Start nodes share this same check (a
+  // function's OWN body looping back into itself at COMPILE TIME is the same infinite-triggerSlot-
+  // recursion hazard; a Call node referencing that function from elsewhere is NOT the same thing and can't
+  // trigger this, see the header comment on why).
   function findCycle(triggers) {
     var state = {};
     function visit(node) {
@@ -63,11 +77,33 @@ window.Compiler = (function () {
     return null;
   }
 
+  // Every node reachable from `node` by following EVENT-typed links (including `node` itself) -- used to
+  // find every Function Return that actually belongs to a given Function Start, for the returns-mismatch
+  // guardrail below. Plain BFS/DFS over the same flowTargets() edges findCycle walks, just collecting
+  // instead of cycle-checking.
+  function collectReachable(node) {
+    var seen = {};
+    var out = [];
+    function visit(n) {
+      if (seen[n.id]) return;
+      seen[n.id] = true;
+      out.push(n);
+      flowTargets(n).forEach(visit);
+    }
+    visit(node);
+    return out;
+  }
+
+  function splitNames(text) {
+    return String(text || "").split(",").map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
+  }
+
   function compile(graph, opts) {
     opts = opts || {};
     CodeGen.reset();
 
     var triggers = graph._nodes.filter(function (node) { return node.constructor.isTriggerNode; });
+    var functionStarts = graph._nodes.filter(function (node) { return node.constructor.isFunctionStartNode; });
 
     // A compiled script binds to exactly one key (KEYVAL, declared once for the OnKey loader) -- more than
     // one On Key Press node with DIFFERENT keys can't both be honored by a single script file. Catch this
@@ -81,13 +117,67 @@ window.Compiler = (function () {
       return { ok: false, error: "Multiple On Key Press nodes with different keys (" + distinctKeys.join(", ") + ") -- a compiled script binds to exactly one key. Give every trigger the same key, or split into separate graphs." };
     }
 
-    var cycleNode = findCycle(triggers);
+    // Every Function Start needs a name, and two functions can't share one -- a duplicate would silently
+    // emit two `local function name(...)` statements, the second clobbering the first with no error.
+    var seenNames = {};
+    for (var fi = 0; fi < functionStarts.length; fi++) {
+      var fname = String(functionStarts[fi].properties.name || "").trim();
+      if (!fname) {
+        return { ok: false, error: "A Function Start node has no name -- every function needs one." };
+      }
+      if (seenNames[fname]) {
+        return { ok: false, error: "Two Function Start nodes are both named \"" + fname + "\" -- function names must be unique." };
+      }
+      seenNames[fname] = true;
+    }
+
+    // Every Function Return reachable from a given Function Start must declare the SAME `returns` (count
+    // and names) that Start declares -- a mismatch would silently return the wrong number of values (or
+    // the right count under the wrong names, purely a readability issue, but still worth catching) from
+    // whichever Return node actually fires at runtime. See nodes-function.js's header for why this is a
+    // compile-time check rather than a live-synced UI.
+    for (var fj = 0; fj < functionStarts.length; fj++) {
+      var start = functionStarts[fj];
+      var expectedReturns = splitNames(start.properties.returns);
+      var reachable = collectReachable(start);
+      for (var rj = 0; rj < reachable.length; rj++) {
+        var node = reachable[rj];
+        if (!node.constructor.isFunctionReturnNode) continue;
+        var actualReturns = node.returnNames || [];
+        var mismatch = actualReturns.length !== expectedReturns.length ||
+          actualReturns.some(function (n, idx) { return n !== expectedReturns[idx]; });
+        if (mismatch) {
+          return {
+            ok: false,
+            error: "Function \"" + start.properties.name + "\": a Function Return declares (" +
+              actualReturns.join(", ") + ") but its Function Start declares returns (" +
+              expectedReturns.join(", ") + ") -- they must match exactly."
+          };
+        }
+      }
+    }
+
+    var cycleNode = findCycle(triggers.concat(functionStarts));
     if (cycleNode) {
       return { ok: false, error: "Exec chain cycle at \"" + (cycleNode.title || cycleNode.type) + "\" -- a \"then\"/event output eventually loops back into itself. Compiling would recurse forever; remove the loop." };
     }
 
     graph._nodes.forEach(function (node) {
       if (isDataNode(node)) node.onExecute();
+    });
+
+    // Compile every function body into its own scope, BEFORE the main trigger walk -- Lua only needs a
+    // function defined above where it's called, and every function is defined once here regardless of how
+    // many Call nodes (or how many OTHER functions) reference it.
+    var functionBlocks = [];
+    functionStarts.forEach(function (start) {
+      CodeGen.pushScope();
+      start.fireOnce();
+      var bodyLines = CodeGen.popScope();
+      functionBlocks.push("local function " + start.properties.name + "(" + (start.paramNames || []).join(", ") + ")");
+      functionBlocks = functionBlocks.concat(bodyLines);
+      functionBlocks.push("end");
+      functionBlocks.push("");
     });
 
     triggers.forEach(function (node) { node.fireOnce(); });
@@ -102,6 +192,7 @@ window.Compiler = (function () {
     out.push("-- " + name + ".lua -- generated by mercs2-ess-visual. Edit the graph, not this file, and re-export.");
     out.push('if not _G.Ess then Loader.Printf("' + name + ': load Ess first (1_Ess.lua in scripts/OnLoad)") return end');
     out.push("");
+    functionBlocks.forEach(function (line) { out.push(line); });
     body.forEach(function (line) { out.push(line); });
     out.push("");
     out.push('Ess.Log("[' + name + '] ran")');
