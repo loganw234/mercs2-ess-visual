@@ -9,6 +9,27 @@
 <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
+<div class="topbar">
+  <div class="topbar-brand" title="A draft node-graph editor for Ess mods -- built on litegraph.js (the same engine ComfyUI's canvas runs on).">
+    <h1>Ess Visual</h1>
+  </div>
+  <div class="topbar-group">
+    <span class="dot" id="dot"></span>
+    <span class="statustext" id="statusText">not connected</span>
+    <button id="btnConnect" title="Connect to lua-bridge on the running game (ws://127.0.0.1:27050) -- Run in game sends the compiled script over and watches the exec chain light up on canvas as it fires">Connect</button>
+  </div>
+  <div class="topbar-group">
+    <button id="btnSaveGraph" title="Download the current graph as a .json file">Save Graph</button>
+    <button id="btnLoadGraph" title="Load a previously saved .json graph">Load Graph</button>
+    <button id="btnNewGraph" title="Clear the canvas and start from a blank graph">New Graph</button>
+    <input type="file" id="fileLoadGraph" accept="application/json" hidden>
+  </div>
+  <div class="topbar-group">
+    <button id="btnUndo" disabled title="Undo (Ctrl+Z)">Undo</button>
+    <button id="btnRedo" disabled title="Redo (Ctrl+Y)">Redo</button>
+  </div>
+  <p class="topbar-hint">Autosaves to this browser as you work -- Save Graph is for a portable file.</p>
+</div>
 <div class="app">
   <div class="library">
     <header>
@@ -31,38 +52,10 @@
     <canvas id="graphcanvas"></canvas>
   </div>
   <div class="side">
-    <header>
-      <h1>Ess Visual</h1>
-      <p>A draft node-graph editor for Ess mods -- built on litegraph.js (the same engine ComfyUI's
-        canvas runs on).</p>
-    </header>
     <div class="samples">
       <label for="sampleSelect">Load a boilerplate sample</label>
       <select id="sampleSelect"></select>
       <p class="hint" id="sampleHint"></p>
-    </div>
-    <div class="live">
-      <div class="live-row">
-        <span class="dot" id="dot"></span>
-        <span class="statustext" id="statusText">not connected</span>
-        <button id="btnConnect">Connect</button>
-      </div>
-      <p class="hint">Connects to lua-bridge on the running game (ws://127.0.0.1:27050). Run sends the
-        compiled script over and watches the exec chain light up here as it (notionally) fires.</p>
-    </div>
-    <div class="graphio">
-      <div class="graphio-row">
-        <button id="btnSaveGraph" title="Download the current graph as a .json file">Save Graph</button>
-        <button id="btnLoadGraph" title="Load a previously saved .json graph">Load Graph</button>
-        <button id="btnNewGraph" title="Clear the canvas and start from a blank graph">New Graph</button>
-        <input type="file" id="fileLoadGraph" accept="application/json" hidden>
-      </div>
-      <div class="graphio-row">
-        <button id="btnUndo" disabled title="Undo (Ctrl+Z)">Undo</button>
-        <button id="btnRedo" disabled title="Redo (Ctrl+Y)">Redo</button>
-      </div>
-      <p class="hint" id="graphioHint">Autosaves to this browser as you work -- Save Graph is for a
-        portable file you can share or back up elsewhere.</p>
     </div>
     <div class="actions">
       <button id="btnCompile">Compile</button>
