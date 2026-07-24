@@ -11,12 +11,13 @@ before extending it.
 ## Try it
 
 No build step. `python -m http.server` (or any static server) in this folder, or just open `index.html`
-directly, and open it in a browser. The default graph is already wired up: **On Key Press → Give Cash →
-Toast Message → Spawn Ahead**, with a **Random Number** node feeding Spawn Ahead's distance instead of a
-fixed value — one of 5 boilerplate starting points under **Load a boilerplate sample** (`src/samples.js`).
-Hit **Compile** to see the generated Lua, **Download .lua** to save it, or **Connect** (lua-bridge on the
-running game) and hit **Run in game** to send the compiled script straight over and watch the exec chain
-light up on canvas as it goes (`src/bridge.js` / `src/runviz.js`).
+directly, and open it in a browser. The default graph is already wired up: **Spawn & Control** (spawn a car
+ahead, capture its guid, face/heal it, log where it landed, clean it up) — one of 10 boilerplate starting
+points under **Load a boilerplate sample** (`src/samples.js`), each adapted from a real, smoke-tested script
+in [mercs2-lua-essentials](https://github.com/loganw234/mercs2-lua-essentials)'s own `samples/` — see
+"Boilerplate samples" below. Hit **Compile** to see the generated Lua, **Download .lua** to save it, or
+**Connect** (lua-bridge on the running game) and hit **Run in game** to send the compiled script straight
+over and watch the exec chain light up on canvas as it goes (`src/bridge.js` / `src/runviz.js`).
 
 ## Working with a graph: save, load, undo, autosave
 
@@ -56,6 +57,36 @@ the code:
    function looked fine right up until you compiled it and got `nil` where a real value used to be. Fixed by
    having `onConfigure` only re-derive the plain-JS paramNames/returnNames cache from the (already-correct)
    restored properties, never touching the pins themselves.
+
+## Boilerplate samples
+
+`src/samples.js` ships **10 starting graphs** (**Load a boilerplate sample**, top-right) — each one adapted
+from a real script in [mercs2-lua-essentials](https://github.com/loganw234/mercs2-lua-essentials)'s own
+`samples/`: the framework's smoke-tested recipes (`samples/recipes/*.lua`, each ending in a self-verifying
+`[SMOKE] <name>: PASS/FAIL` log line and run before every Ess release) or its larger demos
+(`samples/demos/*.lua`). Not a token gesture at "inspired by" — the Ess calls, parameter shapes, and cleanup
+timing below are the real recipe's, translated node-for-node wherever this tool's node coverage allows.
+
+| Sample | Adapted from | Demonstrates |
+|---|---|---|
+| Spawn & Control | `recipes/spawn_and_control.lua` | the foundational spawn → capture guid → act pattern; one Custom Code line for the position report (`Object.pos`/`Math.dist2D` aren't wrapped as nodes) |
+| Command a Squad | `recipes/command_a_squad.lua` | a captured **guid list** (`Spawn: Enemies`) feeding straight into `AI Orders: Attack`, no per-unit bookkeeping |
+| Mark & Notify | `recipes/mark_things.lua` + `notify_the_player.lua` | two captured Mark handles, all four HUD notification styles, and the one Custom Code line `Ess.Mark.clear` needs (no dedicated "clear" node yet) |
+| Direct the Camera | `recipes/direct_the_camera.lua` | capturing a **closure** (Camera: Orbit's `stop`) and calling it later from Custom Code, alongside a captured guid |
+| Command a Helicopter | `recipes/command_a_helicopter.lua` | fully node-based, no Custom Code — the "(Full)" crewed-template + `Vehicle: Fly To` gotchas baked in |
+| A Quick Mission | `recipes/a_quick_mission.lua` | `Quest: Create`'s typed steps table -- an auto reach-marker step then a manual one, no Contract |
+| Call In Support | `recipes/call_in_support.lua` | the airstrike beat of Ess's support call-in system |
+| World Tweaks | `recipes/world_tweaks.lua` | a fully node-based delayed cleanup (`Trigger: After` needs no captured value when the callback takes no arguments) |
+| Timers & Loop | `recipes/do_it_later.lua` | `Trigger: After` vs. `Loop: Start` side by side, with a bare global (not a captured value) for state that persists across repeated ticks |
+| Trailer Hitch | `demos/TrailerHitch.lua` | this library's one **Native**-tier sample -- welding two spawned vehicles together with the engine's raw `Object.Attach` |
+
+**A note on the captured-variable text a few of these type directly into a Custom Code block or a Trigger's
+raw `fn`** (e.g. `__spawn1`, `__mark2`): that's the exact compiled local name `CodeGen.newLocal` will
+produce for that capture, in that graph, at that position in the chain — verified by actually compiling each
+sample and reading the real output, not hand-calculated. Three of these were wrong on the first pass (a
+guessed `__guids1`/`__handle1`/`__stop1` that didn't match the node's real chosen prefix) and would have
+shipped as Lua referencing an undefined variable — caught only because every sample here was compiled and
+checked before it shipped, the same standard the rest of this tool holds itself to.
 
 ## The model: two kinds of wire, and neither one is "real" at compile time
 
@@ -337,8 +368,6 @@ generated Call node per function you define (see "Function blocks" above).
   both discussed as natural next steps — same node library, different compiler backends (OnKey-style
   toggle state needs `Ess.State`, an HTML button's toggle state is just a JS variable, and anything reading
   live game data from a browser is async in a way nothing in-game ever is).
-- **No save/load for a custom graph.** The 5 boilerplate samples (`src/samples.js`) are rebuilt in code
-  every time you load one; there's no project-file persistence for a graph you've built/modified yourself.
 - **No real topological sort for data-node-to-data-node chains.** `compiler.js`'s pre-pass runs every data
   node once, in whatever order `graph._nodes` returns (creation order, not dependency order) -- so
   Flow Control's Compare/And/Or/arithmetic nodes chained into each other work whenever the upstream one

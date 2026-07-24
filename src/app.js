@@ -23,7 +23,7 @@
   if (autosaved && window.confirm("Restore your previous graph from this browser? (Cancel loads the default sample instead.)")) {
     GraphIO.restoreGraph(graph, autosaved, function () { FunctionCalls.rescan(graph); });
   } else {
-    Samples.load("cash-and-ride", graph); // the default starting graph -- see samples.js for this + 4 others
+    Samples.load("spawn-and-control", graph); // the default starting graph -- see samples.js for this + others
     FunctionCalls.rescan(graph); // registers a "Call: name" type for every Function Start already in the graph -- before Palette.render so they show up in the initial sidebar too
   }
   resize();
@@ -123,8 +123,8 @@
     opt.textContent = s.name;
     sampleSelect.appendChild(opt);
   });
-  sampleSelect.value = "cash-and-ride";
-  sampleHint.textContent = Samples.get("cash-and-ride").desc;
+  sampleSelect.value = "spawn-and-control";
+  sampleHint.textContent = Samples.get("spawn-and-control").desc;
   sampleSelect.addEventListener("change", function () {
     var sample = Samples.get(sampleSelect.value);
     if (!window.confirm('Replace the current graph with "' + sample.name + '"? Unsaved changes will be lost.')) {
