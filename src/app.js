@@ -1,5 +1,5 @@
-/* app.js -- canvas setup, a default example graph so the tool demonstrates itself on load, and the
- * Compile/Download wiring. */
+/* app.js -- canvas setup, the sample picker (loads one of samples.js's boilerplate graphs so the tool
+ * demonstrates itself on load), and the Compile/Download wiring. */
 (function () {
   "use strict";
 
@@ -16,41 +16,32 @@
   }
   window.addEventListener("resize", resize);
 
-  // ---- default example graph: On Key Press -> Give Cash -> Toast Message -> Spawn Ahead, with a
-  // Random Number feeding Spawn Ahead's distance instead of a fixed value -- exercises both the exec
-  // chain and a data wire in one small, readable graph. ----
-  function buildExampleGraph() {
-    var onKey = LiteGraph.createNode("ess/onkeypress");
-    onKey.pos = [60, 200];
-    graph.add(onKey);
-
-    var giveCash = LiteGraph.createNode("ess/givecash");
-    giveCash.pos = [320, 140];
-    graph.add(giveCash);
-
-    var toast = LiteGraph.createNode("ess/toastmessage");
-    toast.properties.message = "Cash + a ride!";
-    toast.pos = [580, 140];
-    graph.add(toast);
-
-    var spawn = LiteGraph.createNode("ess/spawnahead");
-    spawn.pos = [840, 140];
-    graph.add(spawn);
-
-    var rnd = LiteGraph.createNode("ess/randomnumber");
-    rnd.pos = [580, 340];
-    graph.add(rnd);
-
-    onKey.connect(0, giveCash, 0);
-    giveCash.connect(0, toast, 0);
-    toast.connect(0, spawn, 0);
-    rnd.connect(0, spawn, 1);
-  }
-
-  buildExampleGraph();
+  Samples.load("cash-and-ride", graph); // the default starting graph -- see samples.js for this + 4 others
   resize();
   graph.start(); // litegraph's own render/interaction loop -- NOT what runs our compile step (see compiler.js)
   Palette.render(graph, canvas); // left sidebar node browser -- see palette.js (also trims litegraph's stock nodes)
+
+  // ---- sample picker ----
+  var sampleSelect = document.getElementById("sampleSelect");
+  var sampleHint = document.getElementById("sampleHint");
+  Samples.list.forEach(function (s) {
+    var opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.name;
+    sampleSelect.appendChild(opt);
+  });
+  sampleSelect.value = "cash-and-ride";
+  sampleHint.textContent = Samples.get("cash-and-ride").desc;
+  sampleSelect.addEventListener("change", function () {
+    var sample = Samples.get(sampleSelect.value);
+    if (!window.confirm('Replace the current graph with "' + sample.name + '"? Unsaved changes will be lost.')) {
+      return;
+    }
+    Samples.load(sample.id, graph);
+    sampleHint.textContent = sample.desc;
+    graph.setDirtyCanvas(true, true);
+    doCompile();
+  });
 
   // ---- compile + preview + download ----
   var codeEl = document.getElementById("code");
