@@ -90,9 +90,19 @@
 
   // ============================================================
   // Ess/RandomNumber -- a PURE DATA node, no exec pins at all. Its "value" is never a real JS number --
-  // it's the Lua expression text "math.random(min, max)", so the randomness happens in-game at runtime,
-  // not once at compile time. This is the node that demonstrates the thing blocks/Scratch are awkward at:
-  // wire its output straight into Spawn Ahead's "distance" input instead of typing a fixed number.
+  // it's a Lua expression, so the randomness happens in-game at runtime, not once at compile time. This
+  // is the node that demonstrates the thing blocks/Scratch are awkward at: wire its output straight into
+  // Spawn Ahead's "distance" input instead of typing a fixed number.
+  //
+  // Uses Ess.RNG, NOT math.random -- an earlier version of this node emitted raw math.random(min, max),
+  // which is exactly the trap Ess.RNG exists to route around (this engine's 32-bit float numbers make a
+  // naive LCG silently degenerate; see CONTRIBUTING.md's "Engine rules" in mercs2-lua-essentials, and
+  // src/53_rng.lua's own header for the confirmed WaveDefense.lua incident that motivated it). Note
+  // Ess.RNG:int(n) returns [1, n], not a (min, max) range -- the offset math below converts one to the
+  // other. A fresh Ess.RNG.new() per call is a little wasteful next to a shared instance reused across
+  // many rolls, but it's correct (still routes through the engine-safe generator) and needs no change to
+  // compiler.js's flat-statement model -- a shared top-level `local RNG = Ess.RNG.new()` preamble would be
+  // the next step if this node ends up used heavily in one script.
   // ============================================================
   function RandomNumber() {
     this.addOutput("value", "number");
@@ -103,9 +113,11 @@
     this.size = [160, 80];
   }
   RandomNumber.title = "Random Number";
-  RandomNumber.desc = "math.random(min, max) -- emits Lua source, not a computed value (see codegen.js header)";
+  RandomNumber.desc = "Ess.RNG.new():int(...) -- emits Lua source, not a computed value (see codegen.js header)";
   RandomNumber.prototype.onExecute = function () {
-    this.setOutputData(0, "math.random(" + this.properties.min + ", " + this.properties.max + ")");
+    var min = this.properties.min, max = this.properties.max;
+    var range = Math.max(1, max - min + 1);
+    this.setOutputData(0, "(Ess.RNG.new():int(" + range + ") + " + (min - 1) + ")");
   };
   LiteGraph.registerNodeType("ess/randomnumber", RandomNumber);
 })();
