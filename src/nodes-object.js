@@ -723,11 +723,11 @@
   // ============================================================
 
   // Ess/object/spawn -- Ess.Object.spawn(sTemplate, x, y, z, yaw) -> uGuid | nil. The one CREATE verb in
-  // this namespace (Pg.Spawn under the hood, with the blank-template crash guard built in). Modeled as a
-  // plain action node, same treatment nodes.js's Spawn Ahead already gives the sibling Object.spawnAhead
-  // call: the returned guid is discarded here rather than exposed as a data output (this node model has no
-  // "capture this action's return into a variable" mechanism) -- "Veyron" is the same confirmed-valid
-  // template default Spawn Ahead already uses, so the node compiles standalone.
+  // this namespace (Pg.Spawn under the hood, with the blank-template crash guard built in). "guid" output
+  // captures the returned guid via CodeGen.newLocal/emitCapture (see codegen.js's header and nodes.js's
+  // Spawn Ahead, which gets the same treatment) so it can be wired into a downstream action node's guid
+  // input -- "Veyron" is the same confirmed-valid template default Spawn Ahead uses, so the node compiles
+  // standalone even with nothing wired to "guid".
   function ObjectSpawn() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -745,16 +745,19 @@
     this.addInput("yaw", "number");
     this.addProperty("yaw", 0);
     this.addWidget("number", "yaw", this.properties.yaw, function (v) { this.properties.yaw = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   ObjectSpawn.title = "Spawn";
-  ObjectSpawn.desc = "Ess.Object.spawn(sTemplate, x, y, z, yaw) -- return value (guid) discarded, see comment above";
+  ObjectSpawn.desc = "Ess.Object.spawn(sTemplate, x, y, z, yaw) -> guid";
   ObjectSpawn.prototype.onAction = function () {
     var sTemplate = CodeGen.luaString(this.properties.sTemplate);
     var x = CodeGen.resolveNumberInput(this, 1, "x");   // input 0 is "exec"
     var y = CodeGen.resolveNumberInput(this, 2, "y");
     var z = CodeGen.resolveNumberInput(this, 3, "z");
     var yaw = CodeGen.resolveNumberInput(this, 4, "yaw");
-    CodeGen.emit("Ess.Object.spawn(" + sTemplate + ", " + x + ", " + y + ", " + z + ", " + yaw + ")");
+    var varName = CodeGen.newLocal("spawn");
+    CodeGen.emitCapture(varName, "Ess.Object.spawn(" + sTemplate + ", " + x + ", " + y + ", " + z + ", " + yaw + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/object/spawn", ObjectSpawn);

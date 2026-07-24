@@ -956,9 +956,8 @@
   // ============================================================================================
 
   // Native/Marker/Add -- uMarker = Marker.Add(nOffsetX, nOffsetY, nOffsetZ, uGuid, nR, nG, nB, nRadius).
-  // Confirmed (mrxtaskobjectivedeliver.lua). Handle discarded -- this compiler can't capture a return value
-  // between nodes yet (same precedent as Ess.Object.spawn/damage in nodes-object.js); use Marker Remove
-  // separately with a hand-typed/wired handle expression if you need to clean this marker up later.
+  // Confirmed (mrxtaskobjectivedeliver.lua). "handle" output captures the returned marker handle via
+  // CodeGen.emitNativeCapture (see codegen.js's header) -- wire it into Marker Remove/Pulse/etc. downstream.
   function MarkerAdd() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -986,11 +985,12 @@
     this.addInput("nRadius", "number");
     this.addProperty("nRadius", 0.05);
     this.addWidget("number", "nRadius", this.properties.nRadius, function (v) { this.properties.nRadius = v; }.bind(this));
+    this.addOutput("handle", "string");
     this.color = CodeGen.NATIVE_COLOR;
     this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAdd.title = "Marker Add";
-  MarkerAdd.desc = "Marker.Add(nOffsetX, nOffsetY, nOffsetZ, uGuid, nR, nG, nB, nRadius) -- handle discarded, this compiler can't capture a return value between nodes yet";
+  MarkerAdd.desc = "Marker.Add(nOffsetX, nOffsetY, nOffsetZ, uGuid, nR, nG, nB, nRadius) -> handle";
   MarkerAdd.prototype.onAction = function () {
     var nOffsetX = CodeGen.resolveNumberInput(this, 1, "nOffsetX");  // input 0 is "exec"
     var nOffsetY = CodeGen.resolveNumberInput(this, 2, "nOffsetY");
@@ -1000,7 +1000,9 @@
     var nG = CodeGen.resolveNumberInput(this, 6, "nG");
     var nB = CodeGen.resolveNumberInput(this, 7, "nB");
     var nRadius = CodeGen.resolveNumberInput(this, 8, "nRadius");
-    CodeGen.emitNative("Marker.Add(" + nOffsetX + ", " + nOffsetY + ", " + nOffsetZ + ", " + guid + ", " + nR + ", " + nG + ", " + nB + ", " + nRadius + ")");
+    var varName = CodeGen.newLocal("marker");
+    CodeGen.emitNativeCapture(varName, "Marker.Add(" + nOffsetX + ", " + nOffsetY + ", " + nOffsetZ + ", " + guid + ", " + nR + ", " + nG + ", " + nB + ", " + nRadius + ")");
+    this.setOutputData(1, varName);   // "handle" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/marker/add", MarkerAdd);
@@ -1008,7 +1010,7 @@
   // Native/Marker/Add3D -- uMarker = Marker.Add3D(uGuid, sIconName, nR, nG, nB [, nWidth]). Confirmed core
   // 5-arg form (mrxtaskrace.lua); optional trailing nWidth only confirmed on one call site
   // ("global_airring") and omitted here for consistency with this file's "drop partially-confirmed
-  // optional trailing args" convention. Handle discarded, see Marker Add above.
+  // optional trailing args" convention. "handle" output captures the returned marker handle, see Marker Add.
   function MarkerAdd3D() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -1026,18 +1028,21 @@
     this.addInput("nB", "number");
     this.addProperty("nB", 255);
     this.addWidget("number", "nB", this.properties.nB, function (v) { this.properties.nB = v; }.bind(this));
+    this.addOutput("handle", "string");
     this.color = CodeGen.NATIVE_COLOR;
     this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAdd3D.title = "Marker Add3D";
-  MarkerAdd3D.desc = "Marker.Add3D(uGuid, sIconName, nR, nG, nB) -- optional trailing nWidth omitted; handle discarded, this compiler can't capture a return value between nodes yet";
+  MarkerAdd3D.desc = "Marker.Add3D(uGuid, sIconName, nR, nG, nB) -> handle -- optional trailing nWidth omitted";
   MarkerAdd3D.prototype.onAction = function () {
     var guid = resolveRawInput(this, 1, "guid");  // input 0 is "exec"
     var icon = CodeGen.luaString(this.properties.sIconName);
     var nR = CodeGen.resolveNumberInput(this, 2, "nR");
     var nG = CodeGen.resolveNumberInput(this, 3, "nG");
     var nB = CodeGen.resolveNumberInput(this, 4, "nB");
-    CodeGen.emitNative("Marker.Add3D(" + guid + ", " + icon + ", " + nR + ", " + nG + ", " + nB + ")");
+    var varName = CodeGen.newLocal("marker");
+    CodeGen.emitNativeCapture(varName, "Marker.Add3D(" + guid + ", " + icon + ", " + nR + ", " + nG + ", " + nB + ")");
+    this.setOutputData(1, varName);
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/marker/add3d", MarkerAdd3D);
@@ -1046,7 +1051,7 @@
   // Confirmed core 7-arg form (live-tested by the wiki's own Snippets page); real scripts sometimes pass
   // more trailing args with nil gaps that aren't individually confirmed -- simplified to the reliable
   // live-tested shape. No literal confirmed texture name exists in the wiki, sTextureName defaults blank.
-  // Handle discarded, see Marker Add above.
+  // "handle" output captures the returned marker handle, see Marker Add.
   function MarkerAddBlip() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -1070,11 +1075,12 @@
     this.addInput("nAlpha", "number");
     this.addProperty("nAlpha", 255);
     this.addWidget("number", "nAlpha", this.properties.nAlpha, function (v) { this.properties.nAlpha = v; }.bind(this));
+    this.addOutput("handle", "string");
     this.color = CodeGen.NATIVE_COLOR;
     this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAddBlip.title = "Marker Add Blip";
-  MarkerAddBlip.desc = "Marker.AddBlip(uGuid, sTextureName, nSize, nR, nG, nB, nAlpha) -- live-tested core form; handle discarded, this compiler can't capture a return value between nodes yet";
+  MarkerAddBlip.desc = "Marker.AddBlip(uGuid, sTextureName, nSize, nR, nG, nB, nAlpha) -> handle -- live-tested core form";
   MarkerAddBlip.prototype.onAction = function () {
     var guid = resolveRawInput(this, 1, "guid");  // input 0 is "exec"
     var texture = CodeGen.luaString(this.properties.sTextureName);
@@ -1083,15 +1089,17 @@
     var nG = CodeGen.resolveNumberInput(this, 4, "nG");
     var nB = CodeGen.resolveNumberInput(this, 5, "nB");
     var nAlpha = CodeGen.resolveNumberInput(this, 6, "nAlpha");
-    CodeGen.emitNative("Marker.AddBlip(" + guid + ", " + texture + ", " + nSize + ", " + nR + ", " + nG + ", " + nB + ", " + nAlpha + ")");
+    var varName = CodeGen.newLocal("marker");
+    CodeGen.emitNativeCapture(varName, "Marker.AddBlip(" + guid + ", " + texture + ", " + nSize + ", " + nR + ", " + nG + ", " + nB + ", " + nAlpha + ")");
+    this.setOutputData(1, varName);
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/marker/addblip", MarkerAddBlip);
 
   // Native/Marker/AddDisc -- uMarker = Marker.AddDisc(uGuidOrLocation, nRadius, nR, nG, nB, nThickness).
   // Confirmed; the first arg accepts either a uGuid expression OR a location-vector expression -- both are
-  // just raw Lua expression text via this same "guid" input, so either form works out of the box. Handle
-  // discarded, see Marker Add above.
+  // just raw Lua expression text via this same "guid" input, so either form works out of the box. "handle"
+  // output captures the returned marker handle, see Marker Add.
   function MarkerAddDisc() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -1113,11 +1121,12 @@
     this.addInput("nThickness", "number");
     this.addProperty("nThickness", 0.25);
     this.addWidget("number", "nThickness", this.properties.nThickness, function (v) { this.properties.nThickness = v; }.bind(this));
+    this.addOutput("handle", "string");
     this.color = CodeGen.NATIVE_COLOR;
     this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAddDisc.title = "Marker Add Disc";
-  MarkerAddDisc.desc = "Marker.AddDisc(uGuidOrLocation, nRadius, nR, nG, nB, nThickness) -- first arg accepts a uGuid or a location-vector expression; handle discarded, this compiler can't capture a return value between nodes yet";
+  MarkerAddDisc.desc = "Marker.AddDisc(uGuidOrLocation, nRadius, nR, nG, nB, nThickness) -> handle -- first arg accepts a uGuid or a location-vector expression";
   MarkerAddDisc.prototype.onAction = function () {
     var guidOrLoc = resolveRawInput(this, 1, "guidOrLoc");  // input 0 is "exec"
     var nRadius = CodeGen.resolveNumberInput(this, 2, "nRadius");
@@ -1125,13 +1134,16 @@
     var nG = CodeGen.resolveNumberInput(this, 4, "nG");
     var nB = CodeGen.resolveNumberInput(this, 5, "nB");
     var nThickness = CodeGen.resolveNumberInput(this, 6, "nThickness");
-    CodeGen.emitNative("Marker.AddDisc(" + guidOrLoc + ", " + nRadius + ", " + nR + ", " + nG + ", " + nB + ", " + nThickness + ")");
+    var varName = CodeGen.newLocal("marker");
+    CodeGen.emitNativeCapture(varName, "Marker.AddDisc(" + guidOrLoc + ", " + nRadius + ", " + nR + ", " + nG + ", " + nB + ", " + nThickness + ")");
+    this.setOutputData(1, varName);
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/marker/adddisc", MarkerAddDisc);
 
   // Native/Marker/AddTripwire -- uMarker = Marker.AddTripwire(nX, nY, nZ, nWidth, nYaw, nR, nG, nB).
-  // Confirmed (mrxtaskrace.lua, race-gate finish lines). Handle discarded, see Marker Add above.
+  // Confirmed (mrxtaskrace.lua, race-gate finish lines). "handle" output captures the returned marker
+  // handle, see Marker Add.
   function MarkerAddTripwire() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -1159,11 +1171,12 @@
     this.addInput("nB", "number");
     this.addProperty("nB", 255);
     this.addWidget("number", "nB", this.properties.nB, function (v) { this.properties.nB = v; }.bind(this));
+    this.addOutput("handle", "string");
     this.color = CodeGen.NATIVE_COLOR;
     this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAddTripwire.title = "Marker Add Tripwire";
-  MarkerAddTripwire.desc = "Marker.AddTripwire(nX, nY, nZ, nWidth, nYaw, nR, nG, nB) -- handle discarded, this compiler can't capture a return value between nodes yet";
+  MarkerAddTripwire.desc = "Marker.AddTripwire(nX, nY, nZ, nWidth, nYaw, nR, nG, nB) -> handle";
   MarkerAddTripwire.prototype.onAction = function () {
     var nX = CodeGen.resolveNumberInput(this, 1, "nX");  // input 0 is "exec"
     var nY = CodeGen.resolveNumberInput(this, 2, "nY");
@@ -1173,7 +1186,9 @@
     var nR = CodeGen.resolveNumberInput(this, 6, "nR");
     var nG = CodeGen.resolveNumberInput(this, 7, "nG");
     var nB = CodeGen.resolveNumberInput(this, 8, "nB");
-    CodeGen.emitNative("Marker.AddTripwire(" + nX + ", " + nY + ", " + nZ + ", " + nWidth + ", " + nYaw + ", " + nR + ", " + nG + ", " + nB + ")");
+    var varName = CodeGen.newLocal("marker");
+    CodeGen.emitNativeCapture(varName, "Marker.AddTripwire(" + nX + ", " + nY + ", " + nZ + ", " + nWidth + ", " + nYaw + ", " + nR + ", " + nG + ", " + nB + ")");
+    this.setOutputData(1, varName);
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/marker/addtripwire", MarkerAddTripwire);

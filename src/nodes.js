@@ -69,6 +69,11 @@
   // ============================================================
   // Ess/SpawnAhead -- Ess.Object.spawnAhead(template, distance). "distance" can come from the widget OR
   // a connected data node (e.g. Random Number below) -- the point of having a data input at all.
+  //
+  // "guid" output: the real function returns the spawned guid (or nil on failure) -- captured into a local
+  // via CodeGen.newLocal/emitCapture (see codegen.js's header on the general mechanism) so it can be wired
+  // into any downstream action node's guid input (Mark Enemy, AI Orders, Camera Watch, ...) instead of
+  // only ever spawning things you have no further way to reference in the same script.
   // ============================================================
   function SpawnAhead() {
     this.addInput("exec", LiteGraph.ACTION);
@@ -78,12 +83,15 @@
     this.addInput("distance", "number");
     this.addProperty("distance", 8);
     this.addWidget("number", "distance", this.properties.distance, function (v) { this.properties.distance = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   SpawnAhead.title = "Spawn Ahead";
-  SpawnAhead.desc = "Ess.Object.spawnAhead(template, distance)";
+  SpawnAhead.desc = "Ess.Object.spawnAhead(template, distance) -> guid";
   SpawnAhead.prototype.onAction = function () {
     var distance = CodeGen.resolveNumberInput(this, 1, "distance");  // input 0 is "exec"
-    CodeGen.emit("Ess.Object.spawnAhead(" + CodeGen.luaString(this.properties.template) + ", " + distance + ")");
+    var varName = CodeGen.newLocal("spawn");
+    CodeGen.emitCapture(varName, "Ess.Object.spawnAhead(" + CodeGen.luaString(this.properties.template) + ", " + distance + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawnahead", SpawnAhead);

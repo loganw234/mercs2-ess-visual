@@ -49,6 +49,11 @@
 
   function doCompile() {
     var result = Compiler.compile(graph, { scriptName: "GraphOutput" });
+    if (!result.ok) {
+      codeEl.textContent = "";
+      statusEl.textContent = "ERROR: " + result.error;
+      return result;
+    }
     codeEl.textContent = result.code;
     statusEl.textContent = result.triggerCount === 0
       ? "No trigger node found -- add an \"On Key Press\" node."
@@ -60,6 +65,7 @@
 
   document.getElementById("btnDownload").addEventListener("click", function () {
     var result = doCompile();
+    if (!result.ok) return;
     var blob = new Blob([result.code], { type: "text/plain" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -94,6 +100,7 @@
   btnRun.addEventListener("click", function () {
     if (running || !Bridge.connected()) return;
     var result = doCompile();
+    if (!result.ok) return;              // doCompile() already showed the error in statusEl
     if (result.triggerCount === 0) {
       statusEl.textContent = "No trigger node found -- add an \"On Key Press\" node.";
       return;

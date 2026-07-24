@@ -40,6 +40,63 @@ for real; it walks the graph once (`compiler.js`) and assembles a string. See `s
 comment for the full reasoning. The same "data is Lua source text" idea extends to table/list-shaped
 params (a guid list, a spawn table) in the newer node files below — see their own header comments.
 
+## Branching, captured values, and Flow Control
+
+Three additions past the base exec/data model above, together aimed at real "semi-complex" scripts instead
+of a flat sequence of one-liners:
+
+**Branching** — `Flow: Branch (If)` (`src/nodes-flow.js`) gives you `if <condition> then <true chain> else
+<false chain> end`, condition as raw Lua boolean-expression text (type it, or wire in `Compare`/`And`/`Or`/
+`Not`, which each emit exactly that). No merge/"then" output afterward, deliberately — same shape as Unreal
+Blueprint's Branch node (this tool's own design reference): true and false are independent continuations,
+not rejoining paths. Under the hood this is the one genuinely new piece of compiler machinery in this repo:
+`codegen.js`'s `emit`/`getLines` moved from one flat line array to a **stack of scopes** —
+`CodeGen.pushScope()`/`popScope()` let a node capture a self-contained sub-chain's lines separately from
+whatever comes before/after it (Branch pushes a scope, fires its "true" output via `triggerSlot`, pops the
+captured lines, repeats for "false", then wraps both in the if/then/else text) — with indentation tracked
+automatically so nesting (a Branch inside another Branch's true/false chain) reads correctly once
+downloaded, not flush-left regardless of depth.
+
+**Captured values** — some real Ess/native calls return something worth keeping: `Ess.Object.spawnAhead`/
+`.spawn`'s guid, `Marker.Add*`'s handle. `CodeGen.newLocal(prefix)` mints a fresh unique Lua local name
+("spawn1", "spawn2", ..., one counter per prefix) and `emitCapture`/`emitNativeCapture` emit `local <name> =
+<expr>` (the native variant also pcall-wraps and normalizes a failed call's result to `nil`, matching every
+guid-returning Ess function's own convention, rather than leaving the local holding pcall's raw error
+string on failure). The capturing node then does `this.setOutputData(slot, name)`, so the bare variable
+name splices into any downstream consumer exactly like any other raw-Lua-expression data wire — **Spawn
+Ahead**, **Object: Spawn**, and all five **Marker Add\*** natives now expose their return value this way;
+wire a spawn's `guid` output straight into Mark Enemy/AI Orders/Camera Watch instead of only ever spawning
+things you have no way to reference again in the same script. `Flow: Set Local` generalizes this to ANY raw
+expression, not just a return value — useful both for readability and for a real correctness gotcha: wiring
+one data node's output into TWO different consumers without Set Local in between means each consumer
+splices the SAME expression text independently, so `Random Number` wired to two places gives two
+*different* rolls at runtime despite looking like "one value, used twice" — routing it through Set Local
+evaluates it once and both consumers read the identical captured local. (Ordering caveat: a captured
+value's local only exists from the moment its own action node executes, so it's only safe to consume from
+another ACTION node further down the same exec chain — see `codegen.js`'s header for why a pure-data node
+consumer would read stale data.)
+
+**Flow Control nodes** (`src/nodes-flow.js`, registered under a third type-namespace, `"flow/*"`, alongside
+`"ess/*"` and `"native/*"`; its own sidebar category): `Compare` (`==`/`~=`/`</<=`/`>`/`>=`, operator picked
+from a combo), `And`/`Or`/`Not`, `Add`/`Subtract`/`Multiply`/`Divide`, `Set Local`, and `Log`
+(`Ess.Log(tostring(msg))`, for checking a captured value or confirming a branch took the path you expected).
+All the comparison/boolean/arithmetic nodes are pure-data, same "emit an expression, never a computed
+value" model as Random Number — chaining one into another (e.g. two `Compare`s into one `And`) works
+whenever the upstream node happens to execute first in the pre-pass, but isn't guaranteed by construction
+(see "What's deliberately not here yet" below) — keep chains shallow until that gets a real topological
+sort.
+
+**Compiler guardrails**, both new checks in `compile()` before anything is emitted: a compiled script binds
+to exactly one key (`KEYVAL`, declared once for the OnKey loader), so multiple `On Key Press` nodes with
+*different* keys now fail to compile with a clear error instead of silently keying off only the first one
+while still including every other trigger's chain in the body (previously: the second trigger's chain ran
+on the *first* trigger's key, and the second key was never reachable at all). And a static cycle check
+(white/gray/black DFS over the exec-link graph, same shape `runviz.js` already walks for its animation)
+catches an exec chain that loops back into itself before compiling recurses into it for real — in practice
+this is hard to construct through normal wiring at all (each node's exec input accepts exactly one incoming
+link, so closing a loop back onto an already-externally-reachable node just steals that connection instead
+of creating a real cycle), but it's a cheap, correct safety net to have regardless.
+
 ## Adding your own node
 
 Every node in `src/nodes.js` follows the same three-part shape:
@@ -153,10 +210,12 @@ Every candidate was checked against the wiki's own per-function confidence notes
 scripts", "Live-confirmed via WebSocket lua-bridge probe", or "no call sites found — unconfirmed") — a node
 only exists here if its argument shape is real, not guessed from the function name; anything the wiki
 itself flags as a bare, unclear `(...)` signature was left out, and unconfirmed-but-simple ones say so
-plainly in their `.desc`. A few `Add*`-family functions (Marker's, mainly) return a HANDLE this compiler
-has no way to capture and re-wire into a later node (no variable-binding mechanism exists yet) — those are
-modeled as fire-and-forget action nodes that discard the handle, documented in each one's `.desc`, matching
-the same "discard the return" precedent `Ess.Object.spawn`/`.damage` already set at the Ess tier.
+plainly in their `.desc`. All five `Marker.Add*` functions return a HANDLE, which now IS captured (see
+"Branching, captured values, and Flow Control" above) — each exposes a `handle` output via
+`CodeGen.emitNativeCapture`, wire it into Marker Remove/Pulse/etc. downstream instead of only ever placing
+a marker you have no way to clean up or modify again in the same script.
+
+**Grand total: 368 nodes** (164 Ess + 193 Native + 11 Flow Control).
 
 ## What's deliberately not here yet
 
@@ -166,9 +225,11 @@ the same "discard the return" precedent `Ess.Object.spawn`/`.damage` already set
   live game data from a browser is async in a way nothing in-game ever is).
 - **No save/load for a custom graph.** The 5 boilerplate samples (`src/samples.js`) are rebuilt in code
   every time you load one; there's no project-file persistence for a graph you've built/modified yourself.
-- **No data-node-to-data-node chains in the compiler.** `compiler.js`'s pre-pass runs every data node
-  once, in whatever order `graph._nodes` returns; a data node that reads another data node's output would
-  need a real topological sort first. Not needed for anything in this draft's node set.
+- **No real topological sort for data-node-to-data-node chains.** `compiler.js`'s pre-pass runs every data
+  node once, in whatever order `graph._nodes` returns (creation order, not dependency order) -- so
+  Flow Control's Compare/And/Or/arithmetic nodes chained into each other work whenever the upstream one
+  happens to land earlier in that list, but aren't guaranteed by construction. Keep chains shallow until
+  this gets a real topological sort.
 - **List/table-shaped parameters are raw text widgets, not a real list-building UI.** A "guids" or "spawns"
   parameter is a string widget whose text IS a Lua table literal, spliced in unquoted — you type
   `{ Ess.Guid('some_unit') }` by hand rather than building it from connected nodes. Consistent with the
