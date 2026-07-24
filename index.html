@@ -20,8 +20,10 @@
       <div><span class="swatch exec"></span> exec chain -- fires in order</div>
       <div><span class="swatch num"></span> number data</div>
       <div><span class="swatch str"></span> string / other data</div>
-      <p>Right-click empty canvas for the same list. Drag from a node's dot to wire it. Del removes the
-        selected node. Click a node below to drop it onto the canvas.</p>
+      <p>Right-click empty canvas for the same list. Drag from a node's dot to wire it. Click a node below
+        to drop it onto the canvas.</p>
+      <p><b>Shortcuts:</b> Del removes the selection. Ctrl+C / Ctrl+V copy and paste (also how you
+        duplicate a node). Ctrl+A selects all. Ctrl+Z / Ctrl+Y undo and redo.</p>
     </div>
     <div id="palette"></div>
   </div>
@@ -47,6 +49,20 @@
       </div>
       <p class="hint">Connects to lua-bridge on the running game (ws://127.0.0.1:27050). Run sends the
         compiled script over and watches the exec chain light up here as it (notionally) fires.</p>
+    </div>
+    <div class="graphio">
+      <div class="graphio-row">
+        <button id="btnSaveGraph" title="Download the current graph as a .json file">Save Graph</button>
+        <button id="btnLoadGraph" title="Load a previously saved .json graph">Load Graph</button>
+        <button id="btnNewGraph" title="Clear the canvas and start from a blank graph">New Graph</button>
+        <input type="file" id="fileLoadGraph" accept="application/json" hidden>
+      </div>
+      <div class="graphio-row">
+        <button id="btnUndo" disabled title="Undo (Ctrl+Z)">Undo</button>
+        <button id="btnRedo" disabled title="Redo (Ctrl+Y)">Redo</button>
+      </div>
+      <p class="hint" id="graphioHint">Autosaves to this browser as you work -- Save Graph is for a
+        portable file you can share or back up elsewhere.</p>
     </div>
     <div class="actions">
       <button id="btnCompile">Compile</button>
@@ -84,6 +100,7 @@
 <script src="lib/bridge-client.js"></script>
 <script src="src/bridge.js"></script>
 <script src="src/runviz.js"></script>
+<script src="src/graphio.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>

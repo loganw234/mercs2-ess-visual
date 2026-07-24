@@ -16,11 +16,103 @@
   }
   window.addEventListener("resize", resize);
 
-  Samples.load("cash-and-ride", graph); // the default starting graph -- see samples.js for this + 4 others
-  FunctionCalls.rescan(graph); // registers a "Call: name" type for every Function Start already in the graph -- before Palette.render so they show up in the initial sidebar too
+  // ---- initial graph: restore an autosave from this browser if one exists, otherwise the default sample.
+  // window.confirm blocks like every other "replace the graph" prompt in this file (sample picker, Load
+  // Graph below) -- same established pattern, not a new one. ----
+  var autosaved = GraphIO.readAutosave();
+  if (autosaved && window.confirm("Restore your previous graph from this browser? (Cancel loads the default sample instead.)")) {
+    GraphIO.restoreGraph(graph, autosaved, function () { FunctionCalls.rescan(graph); });
+  } else {
+    Samples.load("cash-and-ride", graph); // the default starting graph -- see samples.js for this + 4 others
+    FunctionCalls.rescan(graph); // registers a "Call: name" type for every Function Start already in the graph -- before Palette.render so they show up in the initial sidebar too
+  }
   resize();
   graph.start(); // litegraph's own render/interaction loop -- NOT what runs our compile step (see compiler.js)
   Palette.render(graph, canvas); // left sidebar node browser -- see palette.js (also trims litegraph's stock nodes)
+
+  // ---- undo/redo + autosave -- both driven off graph.on_change, litegraph's own general "something
+  // mutated" hook (see graphio.js's header comment for why this one, not the more narrowly-fired
+  // beforeChange/afterChange pair that's explicitly commented "used for undo") -- attached AFTER the
+  // initial load above so restoring/loading the starting graph doesn't itself become an undo step;
+  // undoStack.pushInitial() seeds that instead. ----
+  var btnUndo = document.getElementById("btnUndo");
+  var btnRedo = document.getElementById("btnRedo");
+  var undoStack = GraphIO.createUndoStack(graph, {
+    rescanFn: function () { FunctionCalls.rescan(graph); },
+    onRestore: function () {
+      Palette.refresh();
+      graph.setDirtyCanvas(true, true);
+      doCompile();
+    },
+    onChange: function () {
+      btnUndo.disabled = !undoStack.canUndo();
+      btnRedo.disabled = !undoStack.canRedo();
+    }
+  });
+  graph.on_change = function () {
+    undoStack.record();
+    GraphIO.scheduleAutosave(graph);
+  };
+  undoStack.pushInitial();
+
+  btnUndo.addEventListener("click", function () { undoStack.undo(); });
+  btnRedo.addEventListener("click", function () { undoStack.redo(); });
+
+  // Litegraph's own key handler (LGraphCanvas.prototype.processKey) already covers Ctrl+C/V/A and Delete
+  // -- see README's "Node colors"-adjacent UX section for the full list -- but has no undo/redo of its
+  // own, so this is a separate listener rather than an extension of that one.
+  document.addEventListener("keydown", function (e) {
+    if (e.target.localName === "input" || e.target.localName === "textarea") return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (e.key === "z" && !e.shiftKey) { if (undoStack.undo()) e.preventDefault(); }
+    else if (e.key === "y" || (e.key === "z" && e.shiftKey)) { if (undoStack.redo()) e.preventDefault(); }
+  });
+
+  // ---- save / load / new graph ----
+  document.getElementById("btnSaveGraph").addEventListener("click", function () {
+    var json = JSON.stringify(graph.serialize(), null, 2);
+    var blob = new Blob([json], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "graph.json";
+    a.click();
+  });
+
+  var fileLoadGraph = document.getElementById("fileLoadGraph");
+  document.getElementById("btnLoadGraph").addEventListener("click", function () { fileLoadGraph.click(); });
+  fileLoadGraph.addEventListener("change", function () {
+    var file = fileLoadGraph.files[0];
+    fileLoadGraph.value = ""; // so picking the SAME file again still fires "change"
+    if (!file) return;
+    if (!window.confirm('Replace the current graph with "' + file.name + '"? Unsaved changes will be lost.')) {
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        GraphIO.restoreGraph(graph, reader.result, function () { FunctionCalls.rescan(graph); });
+      } catch (e) {
+        window.alert("Couldn't load that file -- " + e.message);
+        return;
+      }
+      Palette.refresh();
+      graph.setDirtyCanvas(true, true);
+      undoStack.pushInitial();
+      doCompile();
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("btnNewGraph").addEventListener("click", function () {
+    if (!window.confirm("Clear the canvas and start a blank graph? Unsaved changes will be lost.")) return;
+    graph.clear();
+    FunctionCalls.rescan(graph);
+    Palette.refresh();
+    graph.setDirtyCanvas(true, true);
+    undoStack.pushInitial();
+    GraphIO.scheduleAutosave(graph);
+    doCompile();
+  });
 
   // ---- sample picker ----
   var sampleSelect = document.getElementById("sampleSelect");
@@ -43,6 +135,7 @@
     Palette.refresh();
     sampleHint.textContent = sample.desc;
     graph.setDirtyCanvas(true, true);
+    undoStack.pushInitial();
     doCompile();
   });
 

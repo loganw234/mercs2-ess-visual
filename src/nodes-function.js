@@ -10,6 +10,15 @@
  * wires into a slot that gets removed are dropped by litegraph's own removeInput/removeOutput (same
  * behavior as deleting any other input/output) -- there's no attempt to preserve a wire across a rename.
  *
+ * REBUILD ON EDIT, NEVER ON LOAD: the widget callback rebuilds pins because the shape genuinely needs to
+ * change right then. onConfigure (fired after loading a saved/pasted/undone graph) must NOT do the same
+ * rebuild -- litegraph's generic node.configure() has already restored this.inputs/outputs, links and all,
+ * straight from the snapshot by the time onConfigure fires; calling rebuildParams()/rebuildReturns() there
+ * would replace those just-restored slots with fresh ones and silently drop every wire on load (a real bug
+ * this file shipped with once -- caught by testing Save/Load against a real function graph, not by reading
+ * the code). onConfigure only re-derives the paramNames/returnNames instance arrays from properties -- see
+ * each node's own onConfigure for the full reasoning.
+ *
  * DELIBERATE ASYMMETRY: Function Start's `params` becomes the function's REAL Lua parameter list --
  * `paramNames` are spliced directly into `local function name(a, b, c)`. Function Return's `returns` is
  * NOT similarly authoritative -- it's an independent declaration on each Return node, checked against its
@@ -66,7 +75,14 @@
     var self = this;
     (this.paramNames || []).forEach(function (n, i) { self.setOutputData(i + 1, n); });
   };
-  FunctionStart.prototype.onConfigure = function () { this.rebuildParams(); };
+  // NOT rebuildParams() -- litegraph's own generic node.configure() already restores this.outputs
+  // (including each slot's .links, pointing at real reconnected LLink objects) directly from the saved
+  // snapshot before this fires. Calling rebuildParams() here would removeOutput/addOutput every slot right
+  // after they were correctly restored, replacing each one with a fresh output object whose .links starts
+  // empty -- silently dropping every wire out of this node on load. All onConfigure needs to do is re-derive
+  // paramNames (a plain instance property, not itself part of the serialized snapshot) from the properties
+  // text that WAS restored.
+  FunctionStart.prototype.onConfigure = function () { this.paramNames = splitNames(this.properties.params); };
   LiteGraph.registerNodeType("flow/functionstart", FunctionStart);
 
   // ============================================================
@@ -103,7 +119,11 @@
     });
     this.returnNames = names;
   };
-  FunctionReturn.prototype.onConfigure = function () { this.rebuildReturns(); };
+  // NOT rebuildReturns() -- same reasoning as FunctionStart.onConfigure above: litegraph's generic
+  // node.configure() already restored this.inputs (including each slot's .link, pointing at a real
+  // reconnected LLink) from the saved snapshot before this fires. Rebuilding here would silently drop
+  // every wire INTO this node on load. Just re-derive returnNames from the restored properties text.
+  FunctionReturn.prototype.onConfigure = function () { this.returnNames = splitNames(this.properties.returns); };
   FunctionReturn.prototype.onAction = function () {
     var self = this;
     var exprs = this.returnNames.map(function (n, i) { return CodeGen.resolveNumberInput(self, i + 1, n); });

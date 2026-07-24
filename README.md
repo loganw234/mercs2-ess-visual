@@ -18,6 +18,45 @@ Hit **Compile** to see the generated Lua, **Download .lua** to save it, or **Con
 running game) and hit **Run in game** to send the compiled script straight over and watch the exec chain
 light up on canvas as it goes (`src/bridge.js` / `src/runviz.js`).
 
+## Working with a graph: save, load, undo, autosave
+
+**Copy (Ctrl+C), Paste (Ctrl+V), Select All (Ctrl+A), and Delete already work** — litegraph ships all four
+built in (`LGraphCanvas.prototype.processKey` in `lib/litegraph.js`), confirmed working end-to-end against
+this app with zero code changes needed. They just had no visible affordance anywhere, so there was nothing
+to tell you they existed — the sidebar's shortcut legend now says so. Paste-then-nudge is also how you
+duplicate a node; there's no separate dedicated shortcut for that.
+
+**Save Graph / Load Graph** (`src/graphio.js`) round-trip the whole graph as a `.json` file, straight off
+litegraph's own `graph.serialize()`/`configure()` — already a complete, well-formed snapshot, nothing custom
+to invent. **Autosaves to this browser** as you work (localStorage, debounced) with zero setup — reopening
+the tool offers to restore it instead of the default sample. A real gap this closes: until this pass, there
+was no persistence at all, so a refresh silently lost everything.
+
+**Undo/Redo** (Ctrl+Z / Ctrl+Y, or the toolbar buttons) is a plain stack of serialized snapshots, not a
+diff system — simple, and a hand-built graph serializes to a few KB, so keeping up to 50 full copies around
+costs nothing that matters. It's wired to `graph.on_change`, not the `beforeChange`/`afterChange` pair
+litegraph's own source explicitly comments "used for undo" — that pair turned out to only fire from a
+handful of litegraph's own interactive paths (drag-end, its own paste flow); plain `graph.add()`, which is
+what the palette's click-to-add and every programmatic graph build in this tool goes through, calls
+`this.change()` (→ `on_change`) instead, and far more broadly. Recording is debounced 400ms so a drag in
+progress collapses into one undo step, not one per frame.
+
+**The two-pass restore, and the two real bugs this pass caught by actually testing it**, not just reading
+the code:
+1. This graph's node types aren't all static — a `flow/call/<name>` type (see "Function blocks" above)
+   only exists once `FunctionCalls.rescan(graph)` has seen that function's Function Start node, which itself
+   only exists once the graph has been restored. A single `configure()` pass on a save containing a Call
+   node hits that ordering gap and gets a dead placeholder node instead. `GraphIO.restoreGraph()` configures
+   twice — once so Function Start nodes land for real and a rescan can see them, again now that every Call
+   type the graph needs is registered — simpler than detecting which case applies and branching.
+2. Function Start/Return's `onConfigure` originally called the SAME rebuild function the params/returns
+   text widget uses — which works for a live edit, but on load it ran AFTER litegraph had already restored
+   the correct wires, and silently destroyed every one of them (removeInput/addOutput replace a slot
+   outright, with no attempt to preserve what was connected). A Save → Load round trip on any graph with a
+   function looked fine right up until you compiled it and got `nil` where a real value used to be. Fixed by
+   having `onConfigure` only re-derive the plain-JS paramNames/returnNames cache from the (already-correct)
+   restored properties, never touching the pins themselves.
+
 ## The model: two kinds of wire, and neither one is "real" at compile time
 
 This is the thing that actually makes a node graph worth it over Scratch/Blockly-style stacked blocks for

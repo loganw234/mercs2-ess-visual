@@ -116,6 +116,11 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 .dot.closed, .dot.error { background: var(--bad); }
 .statustext { font-size: 12px; color: var(--text-muted); flex: 1 1 auto; }
 
+.side .graphio { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.graphio-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.graphio-row + .graphio-row { margin-top: 8px; }
+.side .graphio .hint { margin: 8px 0 0; color: var(--text-faint); font-size: 11px; line-height: 1.4; }
+
 .side .actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 button {
   background: var(--accent-soft);

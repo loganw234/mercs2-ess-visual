@@ -68,7 +68,12 @@ window.FunctionCalls = (function () {
   var registeredTypes = [];
 
   function rescan(graph) {
-    registeredTypes.forEach(function (type) { LiteGraph.unregisterNodeType(type); });
+    // Guard the unregister with an existence check -- LiteGraph.unregisterNodeType THROWS ("node type not
+    // found: ...") rather than no-op'ing if the type isn't currently registered. Our own registeredTypes
+    // bookkeeping should always match reality, but this call is on the hot path of every doCompile() --
+    // one divergence (anything else touching LiteGraph.registered_node_types directly) would otherwise
+    // crash every future compile, not just this rescan.
+    registeredTypes.forEach(function (type) { if (LiteGraph.registered_node_types[type]) LiteGraph.unregisterNodeType(type); });
     registeredTypes = [];
 
     var starts = graph._nodes.filter(function (n) { return n.constructor.isFunctionStartNode; });
