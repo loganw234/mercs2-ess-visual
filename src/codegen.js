@@ -12,6 +12,26 @@
 window.CodeGen = (function () {
   var lines = [];
 
+  // ---- Native tier -----------------------------------------------------------------------------------
+  // Everything above this point is for Ess.* nodes (Ess's own pcall-guarded, "fails safe" wrappers).
+  // "Native" nodes (nodes-native-*.js) instead emit BARE engine calls -- Object.SetPosition, Camera.Shake,
+  // Marker.Add, and so on -- straight from the wiki's namespace reference docs, not through Ess at all.
+  // These exist for capability Ess doesn't wrap yet (animation, winch/cargo, attachment, raw markers,
+  // vehicle doors/turrets, ...). Two things distinguish them from every Ess node in this repo:
+  //   1. NATIVE_COLOR/NATIVE_BGCOLOR -- every native node sets `this.color = CodeGen.NATIVE_COLOR;
+  //      this.bgcolor = CodeGen.NATIVE_BGCOLOR;` in its constructor (same mechanism On Key Press already
+  //      uses for its own distinct green), so they're visually unmistakable on canvas at a glance: this is
+  //      a raw call, not going through Ess's higher-level logic or state tracking.
+  //   2. emitNative(line) below wraps the call in `pcall(function() ... end)` -- Ess itself pcalls nearly
+  //      everything as a blanket defensive habit (see e.g. src/11_object.lua), and native nodes match that
+  //      even though the wiki's own live-probe notes found these engine namespaces mostly fail SAFE on bad
+  //      args (return nil, not a thrown error) -- pcall is defense in depth against the cases that aren't
+  //      confirmed safe, not a response to a specific known crash.
+  var NATIVE_COLOR = "#5a3a1a";
+  var NATIVE_BGCOLOR = "#2b1c0d";
+
+  function emitNative(line) { lines.push("pcall(function() " + line + " end)"); }
+
   function reset() { lines = []; }
 
   function emit(line) { lines.push(line); }
@@ -35,5 +55,8 @@ window.CodeGen = (function () {
 
   function getLines() { return lines.slice(); }
 
-  return { reset: reset, emit: emit, luaString: luaString, resolveNumberInput: resolveNumberInput, getLines: getLines };
+  return {
+    reset: reset, emit: emit, luaString: luaString, resolveNumberInput: resolveNumberInput, getLines: getLines,
+    emitNative: emitNative, NATIVE_COLOR: NATIVE_COLOR, NATIVE_BGCOLOR: NATIVE_BGCOLOR
+  };
 })();

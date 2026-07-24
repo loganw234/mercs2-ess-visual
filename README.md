@@ -90,16 +90,17 @@ function has a node (two narrow, documented exceptions below), plus a wide slice
 | `src/nodes-human-vehicle.js` | Core `Ess.Human.*` (14) and `Ess.Vehicle.*` (11) |
 | `src/nodes-hud-sound.js` | Core `Ess.Hud.*` and `Ess.Sound.*` |
 
-**Raw tier still isn't represented** (by design — Raw is the bare-native, no-safety-rail tier; every node
-here goes through at least Ess's Core `pcall`-guarded wrapper). Within Core tier, coverage favors the
-namespaces a mod script actually reaches for (Object/Human/Vehicle/Player/Camera/Relations/Hud/Sound/Loop)
-over generic infrastructure (`Ess.Table.*`, `Ess.Safe.*`, `Ess.Override.*`, `Ess.Save*`, the raw `Ess.UI.*`
-builder API — none of these are "mod actions," they're plumbing for other Lua code, so they stay out) and
-skips any getter whose real return is genuinely multi-value with no single primary one (documented with a
-one-line skip comment at each call site — e.g. `Object.pos`/`.velocity`/`.size`, `Player.pose`/`.viewYaw`,
-`Vehicle.followGhost`, `Human.allWeapons`) — this node model is one Lua value per output slot; see
-`nodes-player.js`'s header for the `targetUnderReticle`-style exception (a multi-return function whose own
-doc comment already establishes a primary first value survives fine).
+Within this Ess tier, coverage favors the namespaces a mod script actually reaches for
+(Object/Human/Vehicle/Player/Camera/Relations/Hud/Sound/Loop) over generic infrastructure (`Ess.Table.*`,
+`Ess.Safe.*`, `Ess.Override.*`, `Ess.Save*`, the raw `Ess.UI.*` builder API — none of these are "mod
+actions," they're plumbing for other Lua code, so they stay out) and skips any getter whose real return is
+genuinely multi-value with no single primary one (documented with a one-line skip comment at each call
+site — e.g. `Object.pos`/`.velocity`/`.size`, `Player.pose`/`.viewYaw`, `Vehicle.followGhost`,
+`Human.allWeapons`) — this node model is one Lua value per output slot; see `nodes-player.js`'s header for
+the `targetUnderReticle`-style exception (a multi-return function whose own doc comment already establishes
+a primary first value survives fine). (`Ess.Raw.*` itself — Ess's own thin pcall wrappers underneath
+Easy/Core, e.g. `Ess.Raw.Impulse.*` — isn't separately represented; the **Native** tier below reaches past
+even that, straight to the bare engine.)
 
 **Callback parameters** (`Confirm`'s `onYes`/`onNo`, `Triggers.*`'s `fn`, `Menu`'s `entries` actions, every
 `onDone`/`onFail`/`onComplete` across `Objective`/`Quest`) are modeled as raw Lua-source **text** properties
@@ -115,6 +116,47 @@ real, separate piece of work, not a template tweak.
 `Ess.Easy.Cinematic.shot` (sugar for building one entry of a `steps` list you're already hand-typing — see
 `nodes-cinematic.js`) and `Contract`/`Sandbox`'s `opts` tables (nil-safe with no callback inside — see
 `nodes-missions.js`).
+
+## Native tier — bare engine calls, straight from the wiki
+
+**193 more nodes**, a second category entirely: these skip `Ess` altogether and emit BARE engine calls —
+`Object.SetName(...)`, `Marker.AddDisc(...)`, `Camera.SetPitch(...)` — sourced from
+[merc2-tools-wiki](https://wiki.mercs2.tools)'s reverse-engineered namespace reference docs (`pairs()`-
+enumerated + decompiled-corpus-cross-referenced, not from Ess's own source), for real engine capability Ess
+doesn't wrap at all yet: animation, winch/cargo, object attachment, vehicle doors/turrets/hijacking, raw
+markers (custom colors/blips/tripwires beyond Ess.Mark's canned zone/enemy/objective), HUD fanfares/
+message-box/radar/resource-counter, the dynamic music system, player costumes/disguise/satellite-scan/PDA
+map mode, and a handful of Camera/Relations primitives Ess's own wrappers don't expose directly.
+
+**Visually and mechanically distinct from every Ess node on purpose**, so a graph never quietly mixes
+"goes through Ess's safety net" with "doesn't" without it being obvious at a glance:
+- **Color** — every native node sets `this.color = CodeGen.NATIVE_COLOR; this.bgcolor =
+  CodeGen.NATIVE_BGCOLOR;` in its constructor (a dark amber/brown, vs. Ess nodes' default litegraph
+  styling), the same mechanism `OnKeyPress` already used for its own distinct green.
+- **Type namespace** — registers as `"native/<namespace>/<name>"`, never `"ess/*"`, and the left sidebar
+  groups them under a separate "Native: X" category per namespace rather than merging into Ess's same-named
+  category (`palette.js` derives this from the type string's own first segment).
+- **`CodeGen.emitNative(line)`** instead of `CodeGen.emit(line)` for every native action node — auto-wraps
+  the call in `pcall(function() ... end)`, since these calls skip Ess's own pervasive pcall-guarding
+  entirely. (The wiki's own live-probe notes found most of these engine namespaces fail safe on bad
+  arguments already — return `nil`, not a thrown error — so this is defense in depth, not a response to a
+  specific confirmed crash.)
+
+| File | Covers |
+|---|---|
+| `src/nodes-native-object.js` | `Object.*` (49 — position/transform, health, physics, **animation**, **winch & cargo**, **attachment**, labels/metadata, visibility/state, lifecycle) |
+| `src/nodes-native-vehicle-human.js` | `Vehicle.*` (29 — seats/riders, **doors & turrets**, **hijacking**, state/physics) and `Human.*` (16 — weapons/inventory, actions/animation, state, misc) |
+| `src/nodes-native-player-marker-camera.js` | `Player.*` (41 — **costumes & disguise**, **satellite scan**, **PDA map mode**, boundaries, input/control, misc), `Marker.*` (12 — the raw `Add`/`Add3D`/`AddBlip`/`AddDisc`/`AddTripwire` family plus `Pulse`/`Remove`/setters), `Camera.*` (6 — `SetShot`, pitch, `StopBlending`, raw FOV) |
+| `src/nodes-native-hud-sound.js` | `Hud.*` (15 — MessageBox, the Fanfare family, Radar, ObjectiveTray, ResourceCounter) and `Sound.*` (25 — the Dynamic Music System, category fades/pitch, reverb) |
+
+Every candidate was checked against the wiki's own per-function confidence notes ("Confirmed in real
+scripts", "Live-confirmed via WebSocket lua-bridge probe", or "no call sites found — unconfirmed") — a node
+only exists here if its argument shape is real, not guessed from the function name; anything the wiki
+itself flags as a bare, unclear `(...)` signature was left out, and unconfirmed-but-simple ones say so
+plainly in their `.desc`. A few `Add*`-family functions (Marker's, mainly) return a HANDLE this compiler
+has no way to capture and re-wire into a later node (no variable-binding mechanism exists yet) — those are
+modeled as fire-and-forget action nodes that discard the handle, documented in each one's `.desc`, matching
+the same "discard the return" precedent `Ess.Object.spawn`/`.damage` already set at the Ess tier.
 
 ## What's deliberately not here yet
 

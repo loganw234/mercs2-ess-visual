@@ -2,39 +2,42 @@
  *
  * 1. TRIM: litegraph.js ships ~200 bundled stock node types (basic/*, math/*, audio/*, midi/*, network/*,
  *    geometry/*, ...) meant for its general dataflow/ComfyUI-style use cases. compiler.js only understands
- *    isTriggerNode and "ess/*" action/data nodes (see its isDataNode check and CodeGen.emit calls) -- a
- *    stock node dropped into a graph here would just silently contribute nothing to the compiled output.
- *    So they're unregistered on load, before the user ever opens the Add Node menu.
+ *    isTriggerNode and this repo's own "ess/*"/"native/*" action/data nodes (see its isDataNode check and
+ *    CodeGen.emit/emitNative calls) -- a stock node dropped into a graph here would just silently
+ *    contribute nothing to the compiled output. So they're unregistered on load, before the user ever
+ *    opens the Add Node menu.
  *
  * 2. BROWSE: builds the left sidebar's searchable, categorized node list straight from whatever's left in
  *    LiteGraph.registered_node_types -- reading each node's own .title/.desc statics (the same metadata
  *    every nodes*.js file already declares) rather than a hand-maintained list here that would drift the
  *    moment a new node file is added. Category is the type string's own second path segment ("ess/world/
- *    tint" -> "world"; a flat "ess/givecash" falls into "General"). Click an item to drop that node onto
- *    the canvas -- the same LiteGraph.createNode + graph.add the right-click menu itself uses.
+ *    tint" -> "world"; a flat "ess/givecash" falls into "General") -- and for "native/*" types, prefixed
+ *    "Native: " (native/object/setname -> "Native: Object") so the two tiers never silently merge into one
+ *    flat "Object" bucket in the list, even though an ess/object/* node and a native/object/* node share
+ *    the same namespace segment. Click an item to drop that node onto the canvas -- the same
+ *    LiteGraph.createNode + graph.add the right-click menu itself uses.
  */
 (function () {
   "use strict";
 
   // ---- 1. trim ---------------------------------------------------------------------------------------
   Object.keys(LiteGraph.registered_node_types).forEach(function (type) {
-    if (type.indexOf("ess/") !== 0) LiteGraph.unregisterNodeType(type);
+    if (type.indexOf("ess/") !== 0 && type.indexOf("native/") !== 0) LiteGraph.unregisterNodeType(type);
   });
 
   // ---- 2. browse ---------------------------------------------------------------------------------------
   var CATEGORY_LABELS = { aiorders: "AI Orders", ui: "UI", mark: "Markers" };
-  function categoryLabel(seg) {
-    if (!seg) return "General";
-    if (CATEGORY_LABELS[seg]) return CATEGORY_LABELS[seg];
-    return seg.charAt(0).toUpperCase() + seg.slice(1);
+  function categoryLabel(tier, seg) {
+    var base = seg ? (CATEGORY_LABELS[seg] || (seg.charAt(0).toUpperCase() + seg.slice(1))) : "General";
+    return tier === "native" ? "Native: " + base : base;
   }
 
   function collectCategories() {
     var byCat = {};
     Object.keys(LiteGraph.registered_node_types).sort().forEach(function (type) {
       var cls = LiteGraph.registered_node_types[type];
-      var parts = type.split("/");   // "ess/world/tint" -> ["ess", "world", "tint"]; "ess/givecash" -> ["ess", "givecash"]
-      var label = categoryLabel(parts.length > 2 ? parts[1] : null);
+      var parts = type.split("/");   // "ess/world/tint" -> ["ess","world","tint"]; "native/object/setname" -> ["native","object","setname"]
+      var label = categoryLabel(parts[0], parts.length > 2 ? parts[1] : null);
       (byCat[label] = byCat[label] || []).push({ type: type, title: cls.title || type, desc: cls.desc || "" });
     });
     return byCat;
