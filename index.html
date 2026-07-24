@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ess Visual -- a node-graph draft for scripting Ess mods</title>
+<link rel="stylesheet" href="lib/litegraph.css">
+<link rel="stylesheet" href="lib/tokens.css">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<div class="app">
+  <div class="canvaswrap">
+    <canvas id="graphcanvas"></canvas>
+  </div>
+  <div class="side">
+    <header>
+      <h1>Ess Visual</h1>
+      <p>A draft node-graph editor for Ess mods -- built on litegraph.js (the same engine ComfyUI's
+        canvas runs on). Drag from a node's dot to wire it up; right-click empty canvas to add a node.</p>
+    </header>
+    <div class="actions">
+      <button id="btnCompile">Compile</button>
+      <button id="btnDownload">Download .lua</button>
+    </div>
+    <div id="status"></div>
+    <pre id="code"></pre>
+  </div>
+</div>
+
+<script src="lib/litegraph.js"></script>
+<script src="src/codegen.js"></script>
+<script src="src/nodes.js"></script>
+<script src="src/compiler.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
