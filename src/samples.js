@@ -34,11 +34,35 @@ window.Samples = (function () {
     list.push({ id: id, name: name, desc: desc, build: build });
   }
 
+  // Setting `n.properties[k]` directly (as this used to do) is NOT enough -- CodeGen reads .properties, so
+  // compiling was always correct, but every text/number WIDGET has its own separate `.value` field that
+  // only tracks .properties when a real user edits it interactively (litegraph sets both together as part
+  // of handling that edit). Set .properties programmatically instead, as this helper does, and the widget
+  // silently keeps showing its construction-time default forever -- the node LOOKS unconfigured even though
+  // it compiles correctly. (Caught by a user loading a hand-built graph and screenshotting the mismatch --
+  // not by anything in this file's own testing, which only ever checked compiled output.) litegraph has no
+  // generic fix for this either: LGraphNode.prototype.setProperty/configure both only sync a widget whose
+  // `options.property` was set at addWidget() time, which nothing in this codebase's ~375 node types uses
+  // (every widget here is wired with a plain manual callback instead). Matching widgets to properties by
+  // NAME is a heuristic, not a guarantee (a couple of nodes elsewhere give a widget a friendlier label than
+  // its raw property key, e.g. Impulse's "uGuid (nil = auto)") -- good enough for every property this file
+  // actually sets, verified directly against the real widget list rather than assumed.
+  // The single place that sets BOTH .properties and the matching widget's .value -- see node()'s header
+  // comment above for why both are necessary. Used by node()'s own props argument AND anywhere a sample
+  // needs to set a property AFTER construction (typically wiring a captured variable's exact compiled name
+  // into a later node -- e.g. a Spawn's captured guid into a Face Object call) instead of `n.properties.x =
+  // "..."` directly, which is the same bug in a different shape.
+  function setProp(n, k, v) {
+    n.properties[k] = v;
+    var w = (n.widgets || []).filter(function (w) { return w.name === k; })[0];
+    if (w) w.value = v;
+  }
+
   function node(graph, type, pos, props) {
     var n = LiteGraph.createNode(type);
     if (!n) throw new Error("samples.js: unknown node type " + type);
     n.pos = pos;
-    if (props) Object.keys(props).forEach(function (k) { n.properties[k] = props[k]; });
+    if (props) Object.keys(props).forEach(function (k) { setProp(n, k, props[k]); });
     graph.add(n);
     return n;
   }
@@ -62,8 +86,8 @@ window.Samples = (function () {
       var cleanup = node(graph, "ess/triggers/after", [1180, 220], {
         seconds: 6, fn: "function() Ess.Object.remove(__spawn1) end"
       });
-      face.properties.guid = "__spawn1"; // matches the guid Spawn Ahead captures as -- see file header
-      heal.properties.guid = "__spawn1";
+      setProp(face, "guid", "__spawn1"); // matches the guid Spawn Ahead captures as -- see file header
+      setProp(heal, "guid", "__spawn1");
       onKey.connect(0, spawn, 0);
       spawn.connect(0, face, 0);
       face.connect(0, heal, 0);
@@ -86,7 +110,7 @@ window.Samples = (function () {
       var cleanup = node(graph, "ess/triggers/after", [1180, 140], {
         seconds: 8, fn: "function() for _, g in ipairs(__enemies1) do Ess.Object.remove(g) end end"
       });
-      attack.properties.guids = "__enemies1"; // matches Spawn Enemies' captured guid-list name -- see file header
+      setProp(attack, "guids", "__enemies1"); // matches Spawn Enemies' captured guid-list name -- see file header
       onKey.connect(0, squad, 0);
       squad.connect(0, attack, 0);
       attack.connect(0, toast, 0);
@@ -133,7 +157,7 @@ window.Samples = (function () {
       var deferred = node(graph, "flow/customcode", [900, 260], {
         code: "Ess.Easy.Triggers.after(5, function() __orbit1() Ess.Object.remove(__spawn1) end)"
       });
-      orbit.properties.guid = "__spawn1"; // matches Object: Spawn's captured guid name -- see file header
+      setProp(orbit, "guid", "__spawn1"); // matches Object: Spawn's captured guid name -- see file header
       onKey.connect(0, spawn, 0);
       spawn.connect(0, orbit, 0);
       orbit.connect(0, deferred, 0);
@@ -153,7 +177,7 @@ window.Samples = (function () {
       var cleanup = node(graph, "ess/triggers/after", [1180, 140], {
         seconds: 10, fn: "function() Ess.Object.remove(__spawn1) end"
       });
-      flyTo.properties.uHeli = "__spawn1"; // matches Object: Spawn's captured guid name -- see file header
+      setProp(flyTo, "uHeli", "__spawn1"); // matches Object: Spawn's captured guid name -- see file header
       onKey.connect(0, spawn, 0);
       spawn.connect(0, flyTo, 0);
       flyTo.connect(0, toast, 0);
@@ -251,10 +275,10 @@ window.Samples = (function () {
       var invincTrailer = node(graph, "ess/object/setinvincible", [620, 380], { bOn: true, sReason: "hitch" });
       var attach = node(graph, "native/object/attach", [900, 260], { sHardpoint: "hp_trailerhitch" });
       var toast = node(graph, "ess/toastmessage", [1180, 260], { message: "Trailer hitched -- get in the truck and drive, it follows." });
-      invincTruck.properties.guid = "__spawn1";   // matches the truck's Object: Spawn captured guid name
-      invincTrailer.properties.guid = "__spawn2"; // matches the trailer's Object: Spawn captured guid name
-      attach.properties.parentGuid = "__spawn1";
-      attach.properties.childGuid = "__spawn2";
+      setProp(invincTruck, "guid", "__spawn1");   // matches the truck's Object: Spawn captured guid name
+      setProp(invincTrailer, "guid", "__spawn2"); // matches the trailer's Object: Spawn captured guid name
+      setProp(attach, "parentGuid", "__spawn1");
+      setProp(attach, "childGuid", "__spawn2");
       onKey.connect(0, truck, 0);
       truck.connect(0, trailer, 0);
       trailer.connect(0, invincTruck, 0);
