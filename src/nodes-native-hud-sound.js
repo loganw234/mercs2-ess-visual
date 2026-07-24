@@ -1,8 +1,9 @@
 /* nodes-native-hud-sound.js -- NATIVE Hud and Sound node types: bare engine calls straight from the wiki
  * (docs/mercs2-luacd/wiki/namespaces/hud.md and sound.md), not Ess wrappers. See codegen.js's "Native
- * tier" section for what makes a Native node different from every Ess node in this repo: NATIVE_COLOR /
- * NATIVE_BGCOLOR set in every constructor below, and CodeGen.emitNative(line) instead of CodeGen.emit(line)
- * for every action node (auto-wraps the emitted line in pcall). Same three-part node shape nodes.js's own
+ * tier" section for what makes a Native node different from every Ess node in this repo: its distinct
+ * on-canvas color (centralized in palette.js's colorize(), not set per-node here), and
+ * CodeGen.emitNative(line) instead of CodeGen.emit(line) for every action node (auto-wraps the emitted
+ * line in pcall). Same three-part node shape nodes.js's own
  * header documents otherwise: exec/then action pins, addInput + addProperty + addWidget for values,
  * onAction emits one line of Lua then triggerSlot(0) to continue the chain; pure-data getters have no exec
  * pins and use onExecute + setOutputData instead, emitting the bare call EXPRESSION as Lua source text, no
@@ -18,9 +19,11 @@
  * covered here either); the other two methods have zero call-site confirmation.
  *
  * SKIPPED -- Hud.MessageBox:ModifyPendingMessage / RemovePendingMessage: both require the message-id table
- * a prior AddMessage call RETURNS. This node graph has no mechanism to capture a real return value between
- * nodes -- every data wire carries Lua SOURCE TEXT, never an executed result (see codegen.js header) -- so
- * this two-step pairing genuinely can't be expressed as two fire-and-forget nodes.
+ * a prior AddMessage call RETURNS. Capturing a native call's return value IS supported today via
+ * CodeGen.emitNativeCapture (see codegen.js header, and the 5 Marker Add* nodes in
+ * nodes-native-player-marker-camera.js for precedent) -- Native/Hud/MessageBoxAdd below captures that
+ * message-id table as its "msgIds" output -- but ModifyPendingMessage/RemovePendingMessage themselves
+ * aren't modeled as nodes here, so there's no consumer to wire that capture into yet. Left for a future pass.
  *
  * SKIPPED -- most of the Fanfare family beyond EventFanfare/CardFanfare/TextFanfare: Fanfare and
  * SupportFanfare need a multi-step Create -> AddItem -> Commence ledger build-up whose AddItem field shape
@@ -93,8 +96,9 @@
 
   // ============================================================
   // Native/Hud/MessageBoxAdd -- Hud.MessageBox:AddMessage({sMessage, nPriority, nDuration, bClearBuffer,
-  // bAllowsAppends}). fCallback omitted (see file header); the returned message-id table is discarded here
-  // (fire-and-forget) -- see file header for why ModifyPendingMessage/RemovePendingMessage are skipped.
+  // bAllowsAppends}). fCallback omitted (see file header); the returned message-id table is captured via
+  // CodeGen.emitNativeCapture as the "msgIds" output -- real scripts reuse it later (e.g. to remove the
+  // message) -- see file header for why ModifyPendingMessage/RemovePendingMessage aren't modeled to consume it yet.
   // ============================================================
   function HudMessageBoxAdd() {
     this.addInput("exec", LiteGraph.ACTION);
@@ -112,18 +116,19 @@
     this.addWidget("toggle", "clearBuffer", this.properties.clearBuffer, function (v) { this.properties.clearBuffer = v; }.bind(this));
     this.addProperty("allowAppends", false);
     this.addWidget("toggle", "allowAppends", this.properties.allowAppends, function (v) { this.properties.allowAppends = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
+    this.addOutput("msgIds", "string");
   }
   HudMessageBoxAdd.title = "MessageBox: Add Message";
-  HudMessageBoxAdd.desc = "Hud.MessageBox:AddMessage({sMessage, nPriority, nDuration, bClearBuffer, bAllowsAppends}) -- confirmed extensively (e.g. resident/mrxguiinterface.lua DisplayObjectiveMessage)";
+  HudMessageBoxAdd.desc = "Hud.MessageBox:AddMessage({sMessage, nPriority, nDuration, bClearBuffer, bAllowsAppends}) -- confirmed extensively (e.g. resident/mrxguiinterface.lua DisplayObjectiveMessage) -> msgIds";
   HudMessageBoxAdd.prototype.onAction = function () {
     var message = resolveRawInput(this, 1, "message");  // input 0 is "exec"
     var priority = CodeGen.resolveNumberInput(this, 2, "priority");
     var duration = CodeGen.resolveNumberInput(this, 3, "duration");
     var clearBuffer = this.properties.clearBuffer ? "true" : "false";
     var allowAppends = this.properties.allowAppends ? "true" : "false";
-    CodeGen.emitNative("Hud.MessageBox:AddMessage({sMessage = " + CodeGen.luaString(message) + ", nPriority = " + priority + ", nDuration = " + duration + ", bClearBuffer = " + clearBuffer + ", bAllowsAppends = " + allowAppends + "})");
+    var varName = CodeGen.newLocal("msgids");
+    CodeGen.emitNativeCapture(varName, "Hud.MessageBox:AddMessage({sMessage = " + CodeGen.luaString(message) + ", nPriority = " + priority + ", nDuration = " + duration + ", bClearBuffer = " + clearBuffer + ", bAllowsAppends = " + allowAppends + "})");
+    this.setOutputData(1, varName);   // "msgIds" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/hud/messageboxadd", HudMessageBoxAdd);
@@ -134,8 +139,6 @@
   function HudMessageBoxClear() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudMessageBoxClear.title = "MessageBox: Clear";
   HudMessageBoxClear.desc = "Hud.MessageBox:Clear({})";
@@ -163,8 +166,6 @@
     this.addInput("text", "string");
     this.addProperty("text", "New contact acquired.");
     this.addWidget("text", "text", this.properties.text, function (v) { this.properties.text = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudEventFanfare.title = "Fanfare: Event";
   HudEventFanfare.desc = "Hud.EventFanfare:Commence({sType, vText}) -- confirmed working by live testing. sType must be one of: contact, support, stockpile, landingzone, hvtcapture, hvtkill, bounty, outfit, highscore -- any other value is a silent no-op (the wiki documents a way to inject a custom sType via MrxGuiHudMessage._tEventTextures if you need an arbitrary icon-free centered toast instead)";
@@ -209,8 +210,6 @@
     this.addProperty("displayTime", 6);
     this.addWidget("number", "displayTime", this.properties.displayTime, function (v) { this.properties.displayTime = v; }.bind(this));
     this.size = [240, 260];
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudCardFanfare.title = "Fanfare: Card";
   HudCardFanfare.desc = "Hud.CardFanfare:Commence({sFaction, sTitle, sName, sJobTitle, sPhone1, sPhone2, sEmail, nDisplayTime}) -- full field list confirmed direct from source; fCallback/tCallbackData omitted (see file header)";
@@ -252,8 +251,6 @@
     this.addProperty("fadeTime", 0.5);
     this.addWidget("number", "fadeTime", this.properties.fadeTime, function (v) { this.properties.fadeTime = v; }.bind(this));
     this.size = [220, 200];
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudTextFanfare.title = "Fanfare: Text";
   HudTextFanfare.desc = "Hud.TextFanfare:Commence({sLine1, sLine2, nEntranceTime, nDisplayTime, nFadeTime}) -- field list confirmed from source implementation, no direct top-level call site found; fCallback/tCallbackData omitted (see file header)";
@@ -302,8 +299,6 @@
     this.addProperty("sticky", true);
     this.addWidget("toggle", "sticky", this.properties.sticky, function (v) { this.properties.sticky = v; }.bind(this));
     this.size = [220, 220];
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudRadarAddObjective.title = "Radar: Add Objective";
   HudRadarAddObjective.desc = "Hud.Radar:AddObjective({sName, nR, nG, nB, sTexture, uGuid, bSticky}) -- confirmed extensively; nR/nG/nB scale unconfirmed (assumed 0-255); nWidth/nHeight/bRotate/bOriented/nSortOrder/bDontNetSync omitted (see file header)";
@@ -332,8 +327,6 @@
     this.addWidget("text", "name", this.properties.name, function (v) { this.properties.name = v; }.bind(this));
     this.addProperty("dontNetSync", false);
     this.addWidget("toggle", "dontNetSync", this.properties.dontNetSync, function (v) { this.properties.dontNetSync = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudRadarRemoveObjective.title = "Radar: Remove Objective";
   HudRadarRemoveObjective.desc = "Hud.Radar:RemoveObjective({sName, bDontNetSync}) -- sName must match a name previously used with Radar: Add Objective";
@@ -355,8 +348,6 @@
     this.addInput("name", "string");
     this.addProperty("name", "blip1");
     this.addWidget("text", "name", this.properties.name, function (v) { this.properties.name = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudRadarAnimateSize.title = "Radar: Animate Objective Size";
   HudRadarAnimateSize.desc = "Hud.Radar:AnimateObjectiveSize({sName}) -- confirmed call site uses only sName; the signature's trailing fields are unconfirmed and omitted";
@@ -387,8 +378,6 @@
     this.addInput("text", "string");
     this.addProperty("text", "Reach the extraction point");
     this.addWidget("text", "text", this.properties.text, function (v) { this.properties.text = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudTraySetText.title = "Objective Tray: Set Slot Text";
   HudTraySetText.desc = "Hud.ObjectiveTray:SetSlotToText({vPlayer, nSlot, sText}) -- extremely common across mission scripts; vPlayer nil is confirmed at several call sites";
@@ -413,8 +402,6 @@
     this.addInput("slot", "number");
     this.addProperty("slot", 1);
     this.addWidget("number", "slot", this.properties.slot, function (v) { this.properties.slot = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudTrayClearSlot.title = "Objective Tray: Clear Slot";
   HudTrayClearSlot.desc = "Hud.ObjectiveTray:ClearSlot({vPlayer, nSlot}) -- extremely common alongside Set Slot Text; vPlayer appears optional/nil-safe";
@@ -447,8 +434,6 @@
     this.addInput("increment", "number");
     this.addProperty("increment", 0);
     this.addWidget("number", "increment", this.properties.increment, function (v) { this.properties.increment = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudResourceSetCash.title = "Resource Counter: Set Cash";
   HudResourceSetCash.desc = "Hud.ResourceCounter:SetCash({nValue, sReason, nIncrement}) -- drives the HUD cash readout directly, not the player's real cash balance (pair with Ess.Player.giveCash for that)";
@@ -477,8 +462,6 @@
     this.addInput("increment", "number");
     this.addProperty("increment", 0);
     this.addWidget("number", "increment", this.properties.increment, function (v) { this.properties.increment = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudResourceSetFuel.title = "Resource Counter: Set Fuel";
   HudResourceSetFuel.desc = "Hud.ResourceCounter:SetFuel({nValue, nMax, nIncrement}) -- drives the HUD fuel readout directly";
@@ -501,8 +484,6 @@
     this.addWidget("toggle", "suppressCash", this.properties.suppressCash, function (v) { this.properties.suppressCash = v; }.bind(this));
     this.addProperty("suppressFuel", true);
     this.addWidget("toggle", "suppressFuel", this.properties.suppressFuel, function (v) { this.properties.suppressFuel = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudResourceSetSuppressed.title = "Resource Counter: Set Suppressed";
   HudResourceSetSuppressed.desc = "Hud.ResourceCounter:SetSuppressed({bSuppressCash, bSuppressFuel}) -- hides/shows the cash and fuel readouts independently";
@@ -523,8 +504,6 @@
     this.addInput("duration", "number");
     this.addProperty("duration", -1);
     this.addWidget("number", "duration (-1 = indefinite)", this.properties.duration, function (v) { this.properties.duration = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudResourceShow.title = "Resource Counter: Show";
   HudResourceShow.desc = "Hud.ResourceCounter:Show({nDuration}) -- confirmed call site uses nDuration = -1";
@@ -541,8 +520,6 @@
   function HudResourceHide() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   HudResourceHide.title = "Resource Counter: Hide";
   HudResourceHide.desc = "Hud.ResourceCounter:Hide({})";
@@ -563,8 +540,6 @@
   function SoundStopAndFlushAll() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundStopAndFlushAll.title = "Sound: Stop And Flush All";
   SoundStopAndFlushAll.desc = "Sound.StopAndFlushAllSounds() -- real scripts guard this behind an existence check (later-build addition); pcall wrap here makes that unnecessary";
@@ -584,8 +559,6 @@
     this.addInput("bank", "string");
     this.addProperty("bank", "AMB_City");
     this.addWidget("text", "bank", this.properties.bank, function (v) { this.properties.bank = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundRequestAmbienceBank.title = "Sound: Request Ambience Bank";
   SoundRequestAmbienceBank.desc = "Sound.RequestAmbienceBank(sBankName) -- confirmed with a single localized bank-name string; loads the bank an ambience stream needs before Ess.Sound.ambience cues it";
@@ -610,8 +583,6 @@
     this.addInput("level", "number");
     this.addProperty("level", 1);
     this.addWidget("number", "level", this.properties.level, function (v) { this.properties.level = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundVehicleEngineBoost.title = "Sound: Vehicle Engine Boost";
   SoundVehicleEngineBoost.desc = "Sound.SetVehicleEngineBoost(uGuid, nBoostLevel) -- confirmed with a vehicle guid and nBoostLevel observed as 0/1; guid default is the repo-wide placeholder, not a real vehicle -- wire in an actual vehicle guid";
@@ -635,8 +606,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("enabled", true);
     this.addWidget("toggle", "enabled", this.properties.enabled, function (v) { this.properties.enabled = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetDynamicMusic.title = "Music: Set Dynamic Music";
   SoundSetDynamicMusic.desc = "Sound.SetDynamicMusic(bEnabled) -- very common, toggles the engine's dynamic music system on/off";
@@ -652,8 +621,6 @@
   // ============================================================
   function SoundIsDynamicMusic() {
     this.addOutput("enabled", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundIsDynamicMusic.title = "Music: Is Dynamic Music";
   SoundIsDynamicMusic.desc = "Sound.IsDynamicMusic() -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -683,8 +650,6 @@
     this.addProperty("n4", 0);
     this.addWidget("number", "n4 (always 0 observed)", this.properties.n4, function (v) { this.properties.n4 = v; }.bind(this));
     this.size = [220, 180];
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetActionLevels.title = "Music: Set Action Levels";
   SoundSetActionLevels.desc = "Sound.SetActionLevelsMusic(nLevel, n2, n3, n4) -- confirmed with 4 numeric args, nLevel observed as 0/3/10/15; trailing 3 args always 0 at every call site, meaning unconfirmed";
@@ -707,8 +672,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("locked", true);
     this.addWidget("toggle", "locked", this.properties.locked, function (v) { this.properties.locked = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundLockActionLevel.title = "Music: Lock Action Level";
   SoundLockActionLevel.desc = "Sound.LockActionLevelMusic(bLocked) -- very common, holds a forced action level in place (typically paired with Set Action Levels)";
@@ -735,8 +698,6 @@
     this.addInput("n3", "number");
     this.addProperty("n3", 0);
     this.addWidget("number", "n3", this.properties.n3, function (v) { this.properties.n3 = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetActionThresholds.title = "Music: Set Action Thresholds";
   SoundSetActionThresholds.desc = "Sound.SetActionThresholdsMusic(sState, n2, n3) -- confirmed only ever called with sState = none or explore (always n2=2, n3=0); other state names are unconfirmed";
@@ -764,8 +725,6 @@
     this.addWidget("text", "state", this.properties.state, function (v) { this.properties.state = v; }.bind(this));
     this.addProperty("flag", false);
     this.addWidget("toggle", "flag (meaning unconfirmed)", this.properties.flag, function (v) { this.properties.flag = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundTransitionMusic.title = "Music: Transition";
   SoundTransitionMusic.desc = "Sound.TransitionMusic(sState, bFlag) -- the real runtime trigger that moves the music state machine; the wiki's own modder notes call this the safest lever. sState must already be registered: none, explore, action, high_action, mission_success, mission_failure, hijack, hijack_success, hijack_success_resume, source, shell, pause, silence";
@@ -789,8 +748,6 @@
     this.addInput("state", "string");
     this.addProperty("state", "action");
     this.addWidget("text", "state", this.properties.state, function (v) { this.properties.state = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundBindMusicCue.title = "Music: Bind Music Cue";
   SoundBindMusicCue.desc = "Sound.BindMusicCue(sCue, sState) -- confirmed with a cue string and a state string, binds a music cue to play during a given music state";
@@ -812,8 +769,6 @@
     this.addInput("state", "string");
     this.addProperty("state", "action");
     this.addWidget("text", "state", this.properties.state, function (v) { this.properties.state = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundClearMusicCues.title = "Music: Clear Music Cues";
   SoundClearMusicCues.desc = "Sound.ClearMusicCues(sState) -- confirmed with a single state-name string, clears cues previously bound to that state";
@@ -835,8 +790,6 @@
     this.addInput("faction", "string");
     this.addProperty("faction", "VZ");
     this.addWidget("text", "faction", this.properties.faction, function (v) { this.properties.faction = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetFactionMusic.title = "Music: Set Faction Music";
   SoundSetFactionMusic.desc = "Sound.SetFactionMusic(sFaction) -- confirmed with a single faction-name string, selects that faction's music";
@@ -855,8 +808,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("locked", true);
     this.addWidget("toggle", "locked", this.properties.locked, function (v) { this.properties.locked = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundLockFactionMusic.title = "Music: Lock Faction Music";
   SoundLockFactionMusic.desc = "Sound.LockFactionMusic(bLocked) -- confirmed with a single boolean, holds a forced faction-music selection in place";
@@ -872,8 +823,6 @@
   // ============================================================
   function SoundIsFactionLockedMusic() {
     this.addOutput("locked", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundIsFactionLockedMusic.title = "Music: Is Faction Locked";
   SoundIsFactionLockedMusic.desc = "Sound.IsFactionLockedMusic() -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -889,8 +838,6 @@
   function SoundActivateFactionRegion() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundActivateFactionRegion.title = "Music: Activate Faction Region";
   SoundActivateFactionRegion.desc = "Sound.ActivateFactionRegionMusic() -- confirmed with no arguments, called immediately after Set Faction Music + Lock Faction Music(false) to commit the selection";
@@ -909,8 +856,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("enabled", true);
     this.addWidget("toggle", "enabled", this.properties.enabled, function (v) { this.properties.enabled = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetTimerUpdateMusic.title = "Music: Set Timer Update";
   SoundSetTimerUpdateMusic.desc = "Sound.SetTimerUpdateMusic(bEnabled) -- confirmed, toggled around timer-critical gameplay (mission countdown contexts)";
@@ -930,8 +875,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("enabled", true);
     this.addWidget("toggle", "enabled", this.properties.enabled, function (v) { this.properties.enabled = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetSurvivalMode.title = "Music: Set Survival Mode";
   SoundSetSurvivalMode.desc = "Sound.SetSurvivalMode(bEnabled) -- confirmed, typically paired with a looping sfx_survival_lp cue via Ess.Sound.cue / Ess.Sound.stop";
@@ -949,8 +892,6 @@
   function SoundOverrideUserMusic() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundOverrideUserMusic.title = "Music: Override User Music";
   SoundOverrideUserMusic.desc = "Sound.OverrideUserMusic() -- confirmed, no arguments; real scripts guard this behind an existence check (later-build addition), unnecessary here since emitNative already pcalls";
@@ -967,8 +908,6 @@
   function SoundRestoreUserMusic() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundRestoreUserMusic.title = "Music: Restore User Music";
   SoundRestoreUserMusic.desc = "Sound.RestoreUserMusic() -- confirmed, no arguments, the counterpart to Override User Music; same build-dependent existence-guard caveat";
@@ -987,8 +926,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("locked", true);
     this.addWidget("toggle", "locked", this.properties.locked, function (v) { this.properties.locked = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundLockListenerPosition.title = "Music: Lock Listener Position";
   SoundLockListenerPosition.desc = "Sound.LockListenerPosition(bLocked) -- confirmed, used in pairs bracketing a scripted camera/audio moment (e.g. a Cinematic sequence)";
@@ -1020,8 +957,6 @@
     this.addInput("duration", "number");
     this.addProperty("duration", 1);
     this.addWidget("number", "duration", this.properties.duration, function (v) { this.properties.duration = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundFadeCategoryDown.title = "Sound: Fade Category Down";
   SoundFadeCategoryDown.desc = "Sound.FadeCategoryDown(sCategory, nLevel, nDuration) -- confirmed with a category string and 2 numeric args (e.g. ducking sfx during dialogue); no literal example values found, level/duration defaults here are placeholders";
@@ -1047,8 +982,6 @@
     this.addInput("duration", "number");
     this.addProperty("duration", 1);
     this.addWidget("number", "duration", this.properties.duration, function (v) { this.properties.duration = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundFadeCategoryUp.title = "Sound: Fade Category Up";
   SoundFadeCategoryUp.desc = "Sound.FadeCategoryUp(sCategory, nDuration) -- confirmed counterpart restore call to Fade Category Down";
@@ -1077,8 +1010,6 @@
     this.addInput("duration", "number");
     this.addProperty("duration", 1);
     this.addWidget("number", "duration", this.properties.duration, function (v) { this.properties.duration = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundPitchCategoryActivate.title = "Sound: Pitch Category Activate";
   SoundPitchCategoryActivate.desc = "Sound.PitchCategoryActivate(sCategory, nLevel, nDuration) -- confirmed with a category string and 2 numeric args; no literal example values found, level/duration defaults here are placeholders";
@@ -1104,8 +1035,6 @@
     this.addInput("duration", "number");
     this.addProperty("duration", 1);
     this.addWidget("number", "duration", this.properties.duration, function (v) { this.properties.duration = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundPitchCategoryDeactivate.title = "Sound: Pitch Category Deactivate";
   SoundPitchCategoryDeactivate.desc = "Sound.PitchCategoryDeactivate(sCategory, nDuration) -- confirmed counterpart restore call to Pitch Category Activate";
@@ -1128,8 +1057,6 @@
     this.addInput("preset", "string");
     this.addProperty("preset", "CITY_KG_LIGHT_REFLECTIONS");
     this.addWidget("text", "preset", this.properties.preset, function (v) { this.properties.preset = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   SoundSetReverbPreset.title = "Sound: Set Reverb Preset";
   SoundSetReverbPreset.desc = "Sound.SetReverbPreset(vPresetIdOrName) -- confirmed accepting a preset-name string (or an integer ID, not modeled here); only the name form is exposed since preset names are the discoverable/confirmed real values on the wiki page";

@@ -268,10 +268,9 @@
 
   // Ess/object/damage -- Ess.Object.damage(uGuid, nAmount) -> nNewHealth | nil. There is no native "damage"
   // call on this engine -- the wrapper reads health, subtracts, and Kill()s outright if the result would be
-  // <= 0. Modeled as a plain action node like every other node in this file: the returned new-health value
-  // is discarded here (the same "fire and let the return go" treatment nodes.js's SpawnAhead already gives
-  // Ess.Object.spawnAhead's returned guid) -- wire a separate Health getter afterward if you need the
-  // post-damage number.
+  // <= 0. "newHealth" output captures the returned new-health value via CodeGen.newLocal/emitCapture (see
+  // codegen.js's header and nodes.js's Spawn Ahead, which gets the same treatment) so it can be wired into a
+  // downstream action node instead of needing a separate Health getter afterward.
   function ObjectDamage() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -281,13 +280,16 @@
     this.addInput("nAmount", "number");
     this.addProperty("nAmount", 25);
     this.addWidget("number", "nAmount", this.properties.nAmount, function (v) { this.properties.nAmount = v; }.bind(this));
+    this.addOutput("newHealth", "string");
   }
   ObjectDamage.title = "Damage";
-  ObjectDamage.desc = "Ess.Object.damage(uGuid, nAmount) -- return value (new health) discarded, see comment above";
+  ObjectDamage.desc = "Ess.Object.damage(uGuid, nAmount) -> newHealth";
   ObjectDamage.prototype.onAction = function () {
     var guid = resolveRawInput(this, 1, "guid");   // input 0 is "exec"
     var nAmount = CodeGen.resolveNumberInput(this, 2, "nAmount");
-    CodeGen.emit("Ess.Object.damage(" + guid + ", " + nAmount + ")");
+    var varName = CodeGen.newLocal("newHealth");
+    CodeGen.emitCapture(varName, "Ess.Object.damage(" + guid + ", " + nAmount + ")");
+    this.setOutputData(1, varName);   // "newHealth" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/object/damage", ObjectDamage);
@@ -694,10 +696,10 @@
   LiteGraph.registerNodeType("ess/object/heightaboveground", ObjectHeightAboveGround);
 
   // Ess/object/snaptoground -- Ess.Object.snapToGround(uGuid, nOffset) -> ok. Drops (or lifts) the object
-  // onto the terrain, optionally hovering nOffset units above it. Modeled as a plain action node like Damage
-  // above: the returned "ok" flag is discarded here (same "fire and let the return go" treatment as
-  // SpawnAhead's returned guid in nodes.js) -- wire a Height Above Ground / Position check afterward if you
-  // need to confirm it landed.
+  // onto the terrain, optionally hovering nOffset units above it. "ok" output captures the returned flag via
+  // CodeGen.newLocal/emitCapture (see codegen.js's header and nodes.js's Spawn Ahead, which gets the same
+  // treatment) so a downstream node can branch on whether it actually landed instead of needing a separate
+  // Height Above Ground / Position check.
   function ObjectSnapToGround() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -707,13 +709,16 @@
     this.addInput("nOffset", "number");
     this.addProperty("nOffset", 0);
     this.addWidget("number", "nOffset", this.properties.nOffset, function (v) { this.properties.nOffset = v; }.bind(this));
+    this.addOutput("ok", "string");
   }
   ObjectSnapToGround.title = "Snap To Ground";
-  ObjectSnapToGround.desc = "Ess.Object.snapToGround(uGuid, nOffset) -- return value (ok) discarded, see comment above";
+  ObjectSnapToGround.desc = "Ess.Object.snapToGround(uGuid, nOffset) -> ok";
   ObjectSnapToGround.prototype.onAction = function () {
     var guid = resolveRawInput(this, 1, "guid");   // input 0 is "exec"
     var nOffset = CodeGen.resolveNumberInput(this, 2, "nOffset");
-    CodeGen.emit("Ess.Object.snapToGround(" + guid + ", " + nOffset + ")");
+    var varName = CodeGen.newLocal("ok");
+    CodeGen.emitCapture(varName, "Ess.Object.snapToGround(" + guid + ", " + nOffset + ")");
+    this.setOutputData(1, varName);   // "ok" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/object/snaptoground", ObjectSnapToGround);

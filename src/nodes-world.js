@@ -26,11 +26,14 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("template", "Veyron");
     this.addWidget("text", "template", this.properties.template, function (v) { this.properties.template = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   VehicleSummon.title = "Summon Vehicle";
-  VehicleSummon.desc = "Ess.Easy.Vehicle.summon(template) -- spawn ahead + drop you into the driver seat";
+  VehicleSummon.desc = "Ess.Easy.Vehicle.summon(template) -- spawn ahead + drop you into the driver seat -> guid";
   VehicleSummon.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Vehicle.summon(" + CodeGen.luaString(this.properties.template) + ")");
+    var varName = CodeGen.newLocal("vehicle");
+    CodeGen.emitCapture(varName, "Ess.Easy.Vehicle.summon(" + CodeGen.luaString(this.properties.template) + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/vehicle/summon", VehicleSummon);
@@ -44,11 +47,14 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("type", "Explosion (Grenade)");
     this.addWidget("text", "type", this.properties.type, function (v) { this.properties.type = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   SpawnExplosion.title = "Spawn Explosion";
-  SpawnExplosion.desc = "Ess.Easy.Spawn.explosion(type) -- a real, damaging boom ~10 units in front of you";
+  SpawnExplosion.desc = "Ess.Easy.Spawn.explosion(type) -- a real, damaging boom ~10 units in front of you -> guid";
   SpawnExplosion.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Spawn.explosion(" + CodeGen.luaString(this.properties.type) + ")");
+    var varName = CodeGen.newLocal("explosion");
+    CodeGen.emitCapture(varName, "Ess.Easy.Spawn.explosion(" + CodeGen.luaString(this.properties.type) + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawn/explosion", SpawnExplosion);
@@ -61,11 +67,14 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("type", "Supply Drop (Light MG)");
     this.addWidget("text", "type", this.properties.type, function (v) { this.properties.type = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   SpawnCrate.title = "Spawn Crate";
-  SpawnCrate.desc = "Ess.Easy.Spawn.crate(type) -- a supply drop that parachutes in just ahead of you";
+  SpawnCrate.desc = "Ess.Easy.Spawn.crate(type) -- a supply drop that parachutes in just ahead of you -> guid";
   SpawnCrate.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Spawn.crate(" + CodeGen.luaString(this.properties.type) + ")");
+    var varName = CodeGen.newLocal("crate");
+    CodeGen.emitCapture(varName, "Ess.Easy.Spawn.crate(" + CodeGen.luaString(this.properties.type) + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawn/crate", SpawnCrate);
@@ -78,11 +87,14 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("name", "RPG");
     this.addWidget("text", "name", this.properties.name, function (v) { this.properties.name = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   SpawnWeapon.title = "Spawn Weapon";
-  SpawnWeapon.desc = "Ess.Easy.Spawn.weapon(name) -- a weapon pickup on the ground in front of you";
+  SpawnWeapon.desc = "Ess.Easy.Spawn.weapon(name) -- a weapon pickup on the ground in front of you -> guid";
   SpawnWeapon.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Spawn.weapon(" + CodeGen.luaString(this.properties.name) + ")");
+    var varName = CodeGen.newLocal("weapon");
+    CodeGen.emitCapture(varName, "Ess.Easy.Spawn.weapon(" + CodeGen.luaString(this.properties.name) + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawn/weapon", SpawnWeapon);
@@ -116,12 +128,15 @@
     this.addInput("count", "number");
     this.addProperty("count", 3);
     this.addWidget("number", "count", this.properties.count, function (v) { this.properties.count = v; }.bind(this));
+    this.addOutput("guids", "string");
   }
   SpawnEnemies.title = "Spawn Enemies";
-  SpawnEnemies.desc = "Ess.Easy.Spawn.enemies(count) -- a squad of hostiles spawned ahead and sent at you";
+  SpawnEnemies.desc = "Ess.Easy.Spawn.enemies(count) -- a squad of hostiles spawned ahead and sent at you -> guids";
   SpawnEnemies.prototype.onAction = function () {
     var count = CodeGen.resolveNumberInput(this, 1, "count");  // input 0 is "exec"
-    CodeGen.emit("Ess.Easy.Spawn.enemies(" + count + ")");
+    var varName = CodeGen.newLocal("enemies");
+    CodeGen.emitCapture(varName, "Ess.Easy.Spawn.enemies(" + count + ")");
+    this.setOutputData(1, varName);   // "guids" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawn/enemies", SpawnEnemies);
@@ -145,14 +160,17 @@
     this.addInput("z", "number");
     this.addProperty("z", 0);
     this.addWidget("number", "z", this.properties.z, function (v) { this.properties.z = v; }.bind(this));
+    this.addOutput("guid", "string");
   }
   SpawnFx.title = "Spawn FX";
-  SpawnFx.desc = "Ess.Easy.Spawn.fx(type, x, y, z) -- particle/FX at a world location (x/y/z required)";
+  SpawnFx.desc = "Ess.Easy.Spawn.fx(type, x, y, z) -- particle/FX at a world location (x/y/z required) -> guid";
   SpawnFx.prototype.onAction = function () {
     var x = CodeGen.resolveNumberInput(this, 1, "x");  // input 0 is "exec"
     var y = CodeGen.resolveNumberInput(this, 2, "y");
     var z = CodeGen.resolveNumberInput(this, 3, "z");
-    CodeGen.emit("Ess.Easy.Spawn.fx(" + CodeGen.luaString(this.properties.type) + ", " + x + ", " + y + ", " + z + ")");
+    var varName = CodeGen.newLocal("fx");
+    CodeGen.emitCapture(varName, "Ess.Easy.Spawn.fx(" + CodeGen.luaString(this.properties.type) + ", " + x + ", " + y + ", " + z + ")");
+    this.setOutputData(1, varName);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawn/fx", SpawnFx);
@@ -176,16 +194,19 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bone", "");
     this.addWidget("text", "bone", this.properties.bone, function (v) { this.properties.bone = v; }.bind(this));
+    this.addOutput("handle", "string");
   }
   SpawnFxOn.title = "Spawn FX On";
-  SpawnFxOn.desc = "Ess.Easy.Spawn.fxOn(type, guid, bone) -- FX glued to a bone (leave bone blank for a one-shot at the object's position)";
+  SpawnFxOn.desc = "Ess.Easy.Spawn.fxOn(type, guid, bone) -- FX glued to a bone (leave bone blank for a one-shot at the object's position) -> handle";
   SpawnFxOn.prototype.onAction = function () {
     // "guid" is Lua source text (an expression), not a literal -- resolve like a data slot so a wired
     // guid-producing node's raw expression passes through untouched, same as the widget default.
     var guid = CodeGen.resolveNumberInput(this, 1, "guid");  // input 0 is "exec"
     var bone = this.properties.bone;
     var boneArg = (bone === undefined || bone === null || bone === "") ? "nil" : CodeGen.luaString(bone);
-    CodeGen.emit("Ess.Easy.Spawn.fxOn(" + CodeGen.luaString(this.properties.type) + ", " + guid + ", " + boneArg + ")");
+    var varName = CodeGen.newLocal("fxOn");
+    CodeGen.emitCapture(varName, "Ess.Easy.Spawn.fxOn(" + CodeGen.luaString(this.properties.type) + ", " + guid + ", " + boneArg + ")");
+    this.setOutputData(1, varName);   // "handle" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/spawn/fxon", SpawnFxOn);

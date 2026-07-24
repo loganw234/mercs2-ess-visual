@@ -459,7 +459,9 @@
   // Ess/Vehicle/FlyTo -- Ess.Vehicle.flyTo(uHeli, x, y, z, opts) -- Ai.Deliver once a driver exists.
   // opts.height/careless are exposed directly (Lua-side defaults 0.5/false); opts.onReady is a simple
   // no-arg completion callback modeled as raw Lua-source TEXT (blank = omitted from the opts table, see
-  // file header) -- fires once the flight order is actually issued.
+  // file header) -- fires once the flight order is actually issued. "cancel" output captures the returned
+  // cancel() closure via CodeGen.newLocal/emitCapture (see codegen.js's header and nodes.js's Spawn Ahead,
+  // which gets the same treatment) -- calling it aborts the driver-wait early.
   // ============================================================
   function VehicleFlyTo() {
     this.addInput("exec", LiteGraph.ACTION);
@@ -483,9 +485,10 @@
     this.addWidget("toggle", "careless", this.properties.careless, function (v) { this.properties.careless = v; }.bind(this));
     this.addProperty("onReady", "");
     this.addWidget("text", "onReady (blank = none)", this.properties.onReady, function (v) { this.properties.onReady = v; }.bind(this));
+    this.addOutput("cancel", "string");
   }
   VehicleFlyTo.title = "Vehicle: Fly To";
-  VehicleFlyTo.desc = "Ess.Vehicle.flyTo(uHeli, x, y, z, opts) -- opts.onReady is raw Lua function-literal text, see file header";
+  VehicleFlyTo.desc = "Ess.Vehicle.flyTo(uHeli, x, y, z, opts) -- opts.onReady is raw Lua function-literal text, see file header -> cancel";
   VehicleFlyTo.prototype.onAction = function () {
     var uHeli = resolveRawInput(this, 1, "uHeli");    // input 0 is "exec"
     var x = CodeGen.resolveNumberInput(this, 2, "x");
@@ -495,7 +498,9 @@
     var careless = this.properties.careless ? "true" : "false";
     var onReady = (this.properties.onReady && this.properties.onReady.trim()) ? this.properties.onReady : "";
     var opts = "{ height = " + height + ", careless = " + careless + (onReady ? ", onReady = " + onReady : "") + " }";
-    CodeGen.emit("Ess.Vehicle.flyTo(" + uHeli + ", " + x + ", " + y + ", " + z + ", " + opts + ")");
+    var varName = CodeGen.newLocal("cancel");
+    CodeGen.emitCapture(varName, "Ess.Vehicle.flyTo(" + uHeli + ", " + x + ", " + y + ", " + z + ", " + opts + ")");
+    this.setOutputData(1, varName);   // "cancel" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/vehicle/flyto", VehicleFlyTo);
@@ -530,6 +535,12 @@
   // codes ("d"/"g"/"p"/"c"), modeled as raw text like the guid/list conventions elsewhere in this repo
   // (nodes-encounter.js) -- never through CodeGen.luaString. Default excludes the driver seat, matching
   // the confirmed co-op-partner-boarding use case documented in the Lua source.
+  //
+  // TWO-VALUE RETURN: the real call returns (ok, sSeatTypeUsed), not a single value -- the only node in this
+  // repo that does, so it can't use the single-value CodeGen.newLocal/emitCapture helper (that always emits
+  // "local <name> = <expr>", one name for one value). Written out directly instead: two fresh locals via
+  // CodeGen.newLocal, one "local a, b = expr" line via CodeGen.emit, each local landing on its own output
+  // slot (1 = "ok", 2 = "seatUsed" -- "then" still takes slot 0).
   // ============================================================
   function VehicleEnterSeatExcluding() {
     this.addInput("exec", LiteGraph.ACTION);
@@ -543,14 +554,20 @@
     this.addInput("excludeSeats", "string");
     this.addProperty("excludeSeats", "{ 'd' }");
     this.addWidget("text", "excludeSeats", this.properties.excludeSeats, function (v) { this.properties.excludeSeats = v; }.bind(this));
+    this.addOutput("ok", "string");
+    this.addOutput("seatUsed", "string");
   }
   VehicleEnterSeatExcluding.title = "Vehicle: Enter Seat Excluding";
-  VehicleEnterSeatExcluding.desc = "Ess.Vehicle.enterSeatExcluding(uChar, uVeh, excludeSeats) -- excludeSeats is a Lua table literal of \"d\"/\"g\"/\"p\"/\"c\"";
+  VehicleEnterSeatExcluding.desc = "Ess.Vehicle.enterSeatExcluding(uChar, uVeh, excludeSeats) -- excludeSeats is a Lua table literal of \"d\"/\"g\"/\"p\"/\"c\" -> ok, seatUsed";
   VehicleEnterSeatExcluding.prototype.onAction = function () {
     var uChar = resolveRawInput(this, 1, "uChar");    // input 0 is "exec"
     var uVeh = resolveRawInput(this, 2, "uVeh");
     var excludeSeats = resolveRawInput(this, 3, "excludeSeats");
-    CodeGen.emit("Ess.Vehicle.enterSeatExcluding(" + uChar + ", " + uVeh + ", " + excludeSeats + ")");
+    var okVar = CodeGen.newLocal("ok");
+    var seatVar = CodeGen.newLocal("seat");
+    CodeGen.emit("local " + okVar + ", " + seatVar + " = " + "Ess.Vehicle.enterSeatExcluding(" + uChar + ", " + uVeh + ", " + excludeSeats + ")");
+    this.setOutputData(1, okVar);
+    this.setOutputData(2, seatVar);
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/vehicle/enterseatexcluding", VehicleEnterSeatExcluding);
@@ -565,8 +582,9 @@
   // Ess/Vehicle/OrbitFlight -- Ess.Vehicle.orbitFlight(uHeli, cx, cy, cz, opts) -- fly a CREWED heli a few
   // laps around a point. opts.radius/orbits are exposed directly (Lua-side defaults 90/2); opts.onDone is
   // a simple no-arg completion callback modeled as raw Lua-source TEXT (blank = omitted, see file header)
-  // -- fires after the last leg. The real function's own return (totalSeconds) is discarded, same as every
-  // other action node here that ignores a secondary/incidental return value.
+  // -- fires after the last leg. "totalSeconds" output captures the real function's own returned duration
+  // via CodeGen.newLocal/emitCapture (see codegen.js's header and nodes.js's Spawn Ahead, which gets the
+  // same treatment).
   // ============================================================
   function VehicleOrbitFlight() {
     this.addInput("exec", LiteGraph.ACTION);
@@ -591,9 +609,10 @@
     this.addWidget("number", "orbits", this.properties.orbits, function (v) { this.properties.orbits = v; }.bind(this));
     this.addProperty("onDone", "");
     this.addWidget("text", "onDone (blank = none)", this.properties.onDone, function (v) { this.properties.onDone = v; }.bind(this));
+    this.addOutput("totalSeconds", "string");
   }
   VehicleOrbitFlight.title = "Vehicle: Orbit Flight";
-  VehicleOrbitFlight.desc = "Ess.Vehicle.orbitFlight(uHeli, cx, cy, cz, opts) -- opts.onDone is raw Lua function-literal text, see file header";
+  VehicleOrbitFlight.desc = "Ess.Vehicle.orbitFlight(uHeli, cx, cy, cz, opts) -- opts.onDone is raw Lua function-literal text, see file header -> totalSeconds";
   VehicleOrbitFlight.prototype.onAction = function () {
     var uHeli = resolveRawInput(this, 1, "uHeli");    // input 0 is "exec"
     var cx = CodeGen.resolveNumberInput(this, 2, "cx");
@@ -603,7 +622,9 @@
     var orbits = CodeGen.resolveNumberInput(this, 6, "orbits");
     var onDone = (this.properties.onDone && this.properties.onDone.trim()) ? this.properties.onDone : "";
     var opts = "{ radius = " + radius + ", orbits = " + orbits + (onDone ? ", onDone = " + onDone : "") + " }";
-    CodeGen.emit("Ess.Vehicle.orbitFlight(" + uHeli + ", " + cx + ", " + cy + ", " + cz + ", " + opts + ")");
+    var varName = CodeGen.newLocal("totalSeconds");
+    CodeGen.emitCapture(varName, "Ess.Vehicle.orbitFlight(" + uHeli + ", " + cx + ", " + cy + ", " + cz + ", " + opts + ")");
+    this.setOutputData(1, varName);   // "totalSeconds" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/vehicle/orbitflight", VehicleOrbitFlight);

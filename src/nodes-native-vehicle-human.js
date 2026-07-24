@@ -89,8 +89,6 @@
     this.addProperty("sSeatType", "d");
     this.addWidget("text", "sSeatType", this.properties.sSeatType, function (v) { this.properties.sSeatType = v; }.bind(this));
     this.addOutput("seat", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleGetSeatByType.title = "Vehicle: Get Seat By Type";
   NativeVehicleGetSeatByType.desc = "Vehicle.GetSeatByType(uVehicle, sSeatType) -- \"d\"/\"g\"/\"p\" -- trailing optional bBoolFlag omitted, unconfirmed effect";
@@ -129,8 +127,6 @@
     this.addWidget("text", "uSeat", this.properties.uSeat, function (v) { this.properties.uSeat = v; }.bind(this));
     this.addProperty("bFlag", true);
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleTransferToSeat.title = "Vehicle: Transfer To Seat";
   NativeVehicleTransferToSeat.desc = "Vehicle.TransferToSeat(uVehicle, uSeat, bFlag) -- move a rider directly into a seat guid; bFlag's exact effect is unconfirmed";
@@ -164,8 +160,6 @@
     this.addWidget("text", "uSeat", this.properties.uSeat, function (v) { this.properties.uSeat = v; }.bind(this));
     this.addProperty("bImmediate", true);
     this.addWidget("toggle", "bImmediate", this.properties.bImmediate, function (v) { this.properties.bImmediate = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleEnterBySeatGuid.title = "Vehicle: Enter By Seat Guid";
   NativeVehicleEnterBySeatGuid.desc = "Vehicle.EnterBySeatGuid(uVehicle, uCharacter, uSeat, bImmediate) -- return (success) discarded; trailing optional 2nd flag omitted, unconfirmed";
@@ -198,8 +192,6 @@
     this.addWidget("text", "sSeatType", this.properties.sSeatType, function (v) { this.properties.sSeatType = v; }.bind(this));
     this.addProperty("bImmediate", true);
     this.addWidget("toggle", "bImmediate", this.properties.bImmediate, function (v) { this.properties.bImmediate = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleEnter.title = "Vehicle: Enter Seat Type";
   NativeVehicleEnter.desc = "Vehicle.Enter(uVehicle, uCharacter, sSeatType, bImmediate) -- \"d\"/\"p\"/\"g\" -- trailing optional 2nd flag omitted, unconfirmed";
@@ -223,8 +215,6 @@
     this.addProperty("uSeat", "Ess.Player.character(0)");
     this.addWidget("text", "uSeat", this.properties.uSeat, function (v) { this.properties.uSeat = v; }.bind(this));
     this.addOutput("isLadder", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleIsSeatALadder.title = "Vehicle: Is Seat A Ladder";
   NativeVehicleIsSeatALadder.desc = "Vehicle.IsSeatALadder(uSeat) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -240,8 +230,6 @@
     this.addProperty("uSeat", "Ess.Player.character(0)");
     this.addWidget("text", "uSeat", this.properties.uSeat, function (v) { this.properties.uSeat = v; }.bind(this));
     this.addOutput("isBlocked", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleIsSeatBlocked.title = "Vehicle: Is Seat Blocked";
   NativeVehicleIsSeatBlocked.desc = "Vehicle.IsSeatBlocked(uSeat) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -258,8 +246,6 @@
     this.addProperty("uCharacter", "Ess.Player.character(0)");
     this.addWidget("text", "uCharacter", this.properties.uCharacter, function (v) { this.properties.uCharacter = v; }.bind(this));
     this.addOutput("vehicle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleGetFromRider.title = "Vehicle: Get From Rider";
   NativeVehicleGetFromRider.desc = "Vehicle.GetFromRider(uCharacter) -- emits Lua source, not a resolved guid (see codegen.js header)";
@@ -284,8 +270,6 @@
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
     this.addProperty("sDoorName", "pivot");
     this.addWidget("text", "sDoorName", this.properties.sDoorName, function (v) { this.properties.sDoorName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleOpenDoor.title = "Vehicle: Open Door";
   NativeVehicleOpenDoor.desc = "Vehicle.OpenDoor(uVehicle, sDoorName) -- e.g. \"pivot\"; \"DriverHatch\" proposed for tank hatches but unconfirmed by live test";
@@ -308,8 +292,6 @@
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
     this.addProperty("sDoorName", "pivot");
     this.addWidget("text", "sDoorName", this.properties.sDoorName, function (v) { this.properties.sDoorName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleCloseDoor.title = "Vehicle: Close Door";
   NativeVehicleCloseDoor.desc = "Vehicle.CloseDoor(uVehicle, sDoorName) -- e.g. \"pivot\", mirrors OpenDoor";
@@ -338,8 +320,6 @@
     this.addWidget("text", "sTurretName", this.properties.sTurretName, function (v) { this.properties.sTurretName = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleEnableTurret.title = "Vehicle: Enable Turret";
   NativeVehicleEnableTurret.desc = "Vehicle.EnableTurret(uVehicle, sTurretName, bEnable) -- orientation/control only, does NOT select what fires (see file header)";
@@ -368,8 +348,6 @@
     this.addInput("nValue", "number");
     this.addProperty("nValue", 0);
     this.addWidget("number", "nValue", this.properties.nValue, function (v) { this.properties.nValue = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleSetTurretPitch.title = "Vehicle: Set Turret Pitch";
   NativeVehicleSetTurretPitch.desc = "Vehicle.SetTurretPitch(uVehicle, sTurretName, nValue) -- orientation only, see file header's turret caveat";
@@ -397,8 +375,6 @@
     this.addInput("nAngle", "number");
     this.addProperty("nAngle", 0);
     this.addWidget("number", "nAngle", this.properties.nAngle, function (v) { this.properties.nAngle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleSetTurretYaw.title = "Vehicle: Set Turret Yaw";
   NativeVehicleSetTurretYaw.desc = "Vehicle.SetTurretYaw(uVehicle, nAngle) -- live-confirmed EFFECT, no call sites in the decompiled corpus";
@@ -426,8 +402,6 @@
     this.addWidget("text", "sPartName", this.properties.sPartName, function (v) { this.properties.sPartName = v; }.bind(this));
     this.addProperty("bState", true);
     this.addWidget("toggle", "bState", this.properties.bState, function (v) { this.properties.bState = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleSetParts.title = "Vehicle: Set Parts";
   NativeVehicleSetParts.desc = "Vehicle.SetParts(uVehicle, sPartName, bState) -- e.g. \"LightFront\"/\"CtrlRotation\"; return (bool) discarded";
@@ -453,8 +427,6 @@
     this.addWidget("text", "sSeatType", this.properties.sSeatType, function (v) { this.properties.sSeatType = v; }.bind(this));
     this.addProperty("bCanUse", true);
     this.addWidget("toggle", "bCanUse", this.properties.bCanUse, function (v) { this.properties.bCanUse = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleSetCanPlayerUse.title = "Vehicle: Set Can Player Use";
   NativeVehicleSetCanPlayerUse.desc = "Vehicle.SetCanPlayerUse(uVehicle, sSeatType, bCanUse) -- \"d\"/\"a\"";
@@ -479,8 +451,6 @@
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
     this.addProperty("bUsable", true);
     this.addWidget("toggle", "bUsable", this.properties.bUsable, function (v) { this.properties.bUsable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleUsable.title = "Vehicle: Usable";
   NativeVehicleUsable.desc = "Vehicle.Usable(uVehicle, bUsable) -- toggles whether the vehicle can be entered/used";
@@ -514,8 +484,6 @@
     this.addInput("uVehicle", "string");
     this.addProperty("uVehicle", "Ess.Player.character(0)");
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleHijackStart.title = "Vehicle: Hijack Start";
   NativeVehicleHijackStart.desc = "Vehicle.HijackStart(uHijacker, uHijackee, uVehicle) -- optional 4th \"self\" table arg from the one real call site is omitted, see comment above";
@@ -537,8 +505,6 @@
     this.addInput("uHijacker", "string");
     this.addProperty("uHijacker", "Ess.Player.character(0)");
     this.addWidget("text", "uHijacker", this.properties.uHijacker, function (v) { this.properties.uHijacker = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleHijackAbort.title = "Vehicle: Hijack Abort";
   NativeVehicleHijackAbort.desc = "Vehicle.HijackAbort(uHijacker)";
@@ -558,8 +524,6 @@
     this.addInput("uHijacker", "string");
     this.addProperty("uHijacker", "Ess.Player.character(0)");
     this.addWidget("text", "uHijacker", this.properties.uHijacker, function (v) { this.properties.uHijacker = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleHijackAbortDone.title = "Vehicle: Hijack Abort Done";
   NativeVehicleHijackAbortDone.desc = "Vehicle.HijackAbortDone(uHijacker)";
@@ -579,8 +543,6 @@
     this.addInput("uHijacker", "string");
     this.addProperty("uHijacker", "Ess.Player.character(0)");
     this.addWidget("text", "uHijacker", this.properties.uHijacker, function (v) { this.properties.uHijacker = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleHijackComplete.title = "Vehicle: Hijack Complete";
   NativeVehicleHijackComplete.desc = "Vehicle.HijackComplete(uHijacker)";
@@ -605,8 +567,6 @@
     this.addInput("nState", "number");
     this.addProperty("nState", 0);
     this.addWidget("number", "nState", this.properties.nState, function (v) { this.properties.nState = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleSetHijackState.title = "Vehicle: Set Hijack State";
   NativeVehicleSetHijackState.desc = "Vehicle.SetHijackState(uHijacker, nState) -- numeric state meaning not documented in the corpus, experimental";
@@ -630,8 +590,6 @@
     this.addWidget("text", "uHijacker", this.properties.uHijacker, function (v) { this.properties.uHijacker = v; }.bind(this));
     this.addProperty("bSuccess", false);
     this.addWidget("toggle", "bSuccess", this.properties.bSuccess, function (v) { this.properties.bSuccess = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleSetHijackSuccess.title = "Vehicle: Set Hijack Success";
   NativeVehicleSetHijackSuccess.desc = "Vehicle.SetHijackSuccess(uHijacker, bSuccess)";
@@ -653,8 +611,6 @@
     this.addProperty("uHijacker", "Ess.Player.character(0)");
     this.addWidget("text", "uHijacker", this.properties.uHijacker, function (v) { this.properties.uHijacker = v; }.bind(this));
     this.addOutput("isRemote", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleIsHijackRemote.title = "Vehicle: Is Hijack Remote";
   NativeVehicleIsHijackRemote.desc = "Vehicle.IsHijackRemote(uHijacker) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -673,8 +629,6 @@
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addOutput("isBad", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleIsHijackBad.title = "Vehicle: Is Hijack Bad";
   NativeVehicleIsHijackBad.desc = "Vehicle.IsHijackBad(uGuid) -- live-confirmed return type; which guid kind (hijacker vs vehicle) is inferred, not confirmed";
@@ -693,8 +647,6 @@
     this.addInput("uCharacter", "string");
     this.addProperty("uCharacter", "Ess.Player.character(0)");
     this.addWidget("text", "uCharacter", this.properties.uCharacter, function (v) { this.properties.uCharacter = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleCancelHijack.title = "Vehicle: Cancel Hijack";
   NativeVehicleCancelHijack.desc = "Vehicle.CancelHijack(uCharacter)";
@@ -719,8 +671,6 @@
     this.addInput("uVehicle", "string");
     this.addProperty("uVehicle", "Ess.Player.character(0)");
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleStopTankHijackMotion.title = "Vehicle: Stop Tank Hijack Motion";
   NativeVehicleStopTankHijackMotion.desc = "Vehicle.StopTankHijackMotion(uVehicle)";
@@ -744,8 +694,6 @@
     this.addProperty("uVehicle", "Ess.Player.character(0)");
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
     this.addOutput("isFlying", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleIsFlying.title = "Vehicle: Is Flying";
   NativeVehicleIsFlying.desc = "Vehicle.IsFlying(uVehicle) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -772,8 +720,6 @@
     this.addInput("uVehicle", "string");
     this.addProperty("uVehicle", "Ess.Player.character(0)");
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleRestoreAmmo.title = "Vehicle: Restore Ammo";
   NativeVehicleRestoreAmmo.desc = "Vehicle.RestoreAmmo(uVehicle) -- ammo-only restore; see comment above for how this differs from Ess.Vehicle.repair";
@@ -795,8 +741,6 @@
     this.addInput("uVehicle", "string");
     this.addProperty("uVehicle", "Ess.Player.character(0)");
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleRestoreHealth.title = "Vehicle: Restore Health";
   NativeVehicleRestoreHealth.desc = "Vehicle.RestoreHealth(uVehicle) -- health-only restore; see comment above for how this differs from Ess.Vehicle.repair";
@@ -817,8 +761,6 @@
     this.addInput("uVehicle", "string");
     this.addProperty("uVehicle", "Ess.Player.character(0)");
     this.addWidget("text", "uVehicle", this.properties.uVehicle, function (v) { this.properties.uVehicle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeVehicleClearControls.title = "Vehicle: Clear Controls";
   NativeVehicleClearControls.desc = "Vehicle.ClearControls(uVehicle)";
@@ -861,8 +803,6 @@
     this.addInput("tWeaponGuids", "string");
     this.addProperty("tWeaponGuids", "{ }");
     this.addWidget("text", "tWeaponGuids", this.properties.tWeaponGuids, function (v) { this.properties.tWeaponGuids = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanSetAllWeapons.title = "Human: Set All Weapons";
   NativeHumanSetAllWeapons.desc = "Human.Inventory.SetAllWeapons(uCharGuid, tWeaponGuids) -- tWeaponGuids is a Lua table literal of weapon guids, e.g. \"{ uPrimary, uGrenade }\"";
@@ -903,8 +843,6 @@
     this.addInput("uGuid", "string");
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanDestroyAllWeapons.title = "Human: Destroy All Weapons";
   NativeHumanDestroyAllWeapons.desc = "Human.Inventory.DestroyAllWeapons(uGuid) -- no call sites in the decompiled corpus, unconfirmed but low-risk single-guid signature";
@@ -946,8 +884,6 @@
     this.addWidget("number", "nBlendTime", this.properties.nBlendTime, function (v) { this.properties.nBlendTime = v; }.bind(this));
     this.addProperty("bFlag4", false);
     this.addWidget("toggle", "bFlag4", this.properties.bFlag4, function (v) { this.properties.bFlag4 = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanPlayRawAnimation.title = "Human: Play Raw Animation";
   NativeHumanPlayRawAnimation.desc = "Human.PlayRawAnimation(uGuid, sAnimName, bLoop, bFlag2, nBlendTime, bFlag4) -- bFlag2/bFlag4/nBlendTime meaning beyond loop is unconfirmed; return (success) discarded";
@@ -978,8 +914,6 @@
     this.addWidget("text", "sStateName", this.properties.sStateName, function (v) { this.properties.sStateName = v; }.bind(this));
     this.addProperty("sAnimOrValue", "Idle");
     this.addWidget("text", "sAnimOrValue", this.properties.sAnimOrValue, function (v) { this.properties.sAnimOrValue = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanSetState.title = "Human: Set State";
   NativeHumanSetState.desc = "Human.SetState(uGuid, sStateName, sAnimOrValue) -- e.g. \"Upright\"/\"Idle\", \"Subdued\"/\"Idle\", \"InVehicle\"/<anim>";
@@ -1003,8 +937,6 @@
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addProperty("bOn", true);
     this.addWidget("toggle", "bOn", this.properties.bOn, function (v) { this.properties.bOn = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanSetJostleEnabled.title = "Human: Set Jostle Enabled";
   NativeHumanSetJostleEnabled.desc = "Human.SetJostleEnabled(uGuid, bOn)";
@@ -1030,8 +962,6 @@
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addOutput("isSwimming", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanIsSwimming.title = "Human: Is Swimming";
   NativeHumanIsSwimming.desc = "Human.IsSwimming(uGuid) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -1048,8 +978,6 @@
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addOutput("isCarrying", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanIsCarrying.title = "Human: Is Carrying";
   NativeHumanIsCarrying.desc = "Human.IsCarrying(uGuid) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -1066,8 +994,6 @@
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addOutput("isGrappling", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanIsGrappling.title = "Human: Is Grappling";
   NativeHumanIsGrappling.desc = "Human.IsGrappling(uGuid) -- emits Lua source, not a resolved boolean (see codegen.js header)";
@@ -1092,8 +1018,6 @@
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addProperty("bFlag", true);
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanDrop.title = "Human: Drop";
   NativeHumanDrop.desc = "Human.Drop(uGuid, bFlag) -- drops whatever the character is currently carrying";
@@ -1115,8 +1039,6 @@
     this.addInput("uGuid", "string");
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanStopGrappling.title = "Human: Stop Grappling";
   NativeHumanStopGrappling.desc = "Human.StopGrappling(uGuid)";
@@ -1140,8 +1062,6 @@
     this.addInput("uGuid", "string");
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanSetPreemptiveRagdoll.title = "Human: Set Preemptive Ragdoll";
   NativeHumanSetPreemptiveRagdoll.desc = "Human.SetPreemptiveRagdoll(uGuid)";
@@ -1163,8 +1083,6 @@
     this.addInput("uGuid", "string");
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanForceExitSeatNoSnap.title = "Human: Force Exit Seat (No Snap)";
   NativeHumanForceExitSeatNoSnap.desc = "Human.ForceExitSeatNoSnap(uGuid) -- forces exit from a vehicle seat without the normal snap-to-ground/exit animation";
@@ -1184,8 +1102,6 @@
     this.addInput("uGuid", "string");
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanPersistTransform.title = "Human: Persist Transform";
   NativeHumanPersistTransform.desc = "Human.PersistTransform(uGuid)";
@@ -1207,8 +1123,6 @@
     this.addInput("uGuid", "string");
     this.addProperty("uGuid", "Ess.Player.character(0)");
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanScrub.title = "Human: Scrub";
   NativeHumanScrub.desc = "Human.Scrub(uGuid) -- likely resets/clears transient character state, exact effect not confirmed";
@@ -1232,8 +1146,6 @@
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addProperty("bAllow", true);
     this.addWidget("toggle", "bAllow", this.properties.bAllow, function (v) { this.properties.bAllow = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanSetAllowCorpseCleanup.title = "Human: Set Allow Corpse Cleanup";
   NativeHumanSetAllowCorpseCleanup.desc = "Human.SetAllowCorpseCleanup(uGuid, bAllow) -- return (previous state) discarded";
@@ -1258,8 +1170,6 @@
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addProperty("bLocked", false);
     this.addWidget("toggle", "bLocked", this.properties.bLocked, function (v) { this.properties.bLocked = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeHumanSetFireLock.title = "Human: Set Fire Lock";
   NativeHumanSetFireLock.desc = "Human.SetFireLock(uGuid, bLocked) -- prevents/allows weapon firing";

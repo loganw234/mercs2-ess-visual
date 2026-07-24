@@ -1,7 +1,8 @@
 /* nodes-native-object.js -- NATIVE Object namespace node types, the first batch in the "native/" tier
- * (see codegen.js's Native-tier header comment for the two things that make these different from every
- * Ess node in this repo: NATIVE_COLOR / NATIVE_BGCOLOR, and CodeGen.emitNative wrapping action lines in a
- * defensive pcall). These wrap BARE engine calls straight off the Object namespace -- Object.SetName, not
+ * (see codegen.js's Native-tier header comment for what makes these different from every Ess node in
+ * this repo: their distinct on-canvas color, centralized in palette.js's colorize(), and
+ * CodeGen.emitNative wrapping action lines in a defensive pcall). These wrap BARE engine calls straight
+ * off the Object namespace -- Object.SetName, not
  * Ess.Object.setName -- for real engine capability Ess's own framework doesn't cover yet: animation
  * playback, winch/cargo, attachment, hibernation tuning, and a handful of Position/Health/Physics/Labels
  * entries the Ess tier never wrapped.
@@ -76,8 +77,6 @@
     this.addWidget("text", "target", this.properties.target, function (v) { this.properties.target = v; }.bind(this));
     this.addProperty("sHardpoint", "HP_root");
     this.addWidget("text", "sHardpoint", this.properties.sHardpoint, function (v) { this.properties.sHardpoint = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetPositionToObject.title = "Set Position To Object";
   NativeObjectSetPositionToObject.desc = "Object.SetPositionToObject(uGuid, uTargetGuid, sHardpoint) -- unconfirmed, no call sites in the decompiled corpus (signature inferred only by analogy to the confirmed SetTransformToObject)";
@@ -102,8 +101,6 @@
     this.addWidget("text", "target", this.properties.target, function (v) { this.properties.target = v; }.bind(this));
     this.addProperty("sHardpoint", "HP_root");
     this.addWidget("text", "sHardpoint", this.properties.sHardpoint, function (v) { this.properties.sHardpoint = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetTransformToObject.title = "Set Transform To Object";
   NativeObjectSetTransformToObject.desc = "Object.SetTransformToObject(uGuid, uTargetGuid, sHardpoint) -- confirmed in real scripts, both with and without the trailing hardpoint name";
@@ -124,8 +121,6 @@
     this.addProperty("sHardpointName", "HP_Turret");
     this.addWidget("text", "sHardpointName", this.properties.sHardpointName, function (v) { this.properties.sHardpointName = v; }.bind(this));
     this.addOutput("yaw", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetHardpointYaw.title = "Get Hardpoint Yaw";
   NativeObjectGetHardpointYaw.desc = "Object.GetHardpointYaw(uGuid, sHardpointName) -- live-probe confirmed, returns degrees; still no call sites in the decompiled corpus";
@@ -144,8 +139,6 @@
     this.addProperty("sHardpointName", "HP_Turret");
     this.addWidget("text", "sHardpointName", this.properties.sHardpointName, function (v) { this.properties.sHardpointName = v; }.bind(this));
     this.addOutput("pitch", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetHardpointPitch.title = "Get Hardpoint Pitch";
   NativeObjectGetHardpointPitch.desc = "Object.GetHardpointPitch(uGuid, sHardpointName) -- live-probe confirmed, returns degrees; still no call sites in the decompiled corpus";
@@ -167,8 +160,6 @@
     this.addProperty("bIgnoreY", false);
     this.addWidget("toggle", "bIgnoreY", this.properties.bIgnoreY, function (v) { this.properties.bIgnoreY = v; }.bind(this));
     this.addOutput("inside", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectInsideBoundary.title = "Inside Boundary";
   NativeObjectInsideBoundary.desc = "Object.InsideBoundary(uGuid, uZoneGuid, bIgnoreY) -- confirmed in real scripts, e.g. checking a character against a named region guid";
@@ -190,8 +181,6 @@
     this.addProperty("zoneGuid", "Ess.Player.character(0)");
     this.addWidget("text", "zoneGuid", this.properties.zoneGuid, function (v) { this.properties.zoneGuid = v; }.bind(this));
     this.addOutput("outside", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectOutsideBoundary.title = "Outside Boundary";
   NativeObjectOutsideBoundary.desc = "Object.OutsideBoundary(uGuid, uZoneGuid) -- confirmed in real scripts";
@@ -214,8 +203,6 @@
     this.addProperty("sNodeName", "Engine");
     this.addWidget("text", "sNodeName", this.properties.sNodeName, function (v) { this.properties.sNodeName = v; }.bind(this));
     this.addOutput("health", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetNodeHealth.title = "Get Node Health";
   NativeObjectGetNodeHealth.desc = "Object.GetNodeHealth(uGuid, sNodeName) -- confirmed in real scripts, for destructible sub-parts";
@@ -238,8 +225,6 @@
     this.addWidget("toggle", "bUnkillable", this.properties.bUnkillable, function (v) { this.properties.bUnkillable = v; }.bind(this));
     this.addProperty("sReason", "Support");
     this.addWidget("text", "sReason", this.properties.sReason, function (v) { this.properties.sReason = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetUnkillable.title = "Set Unkillable";
   NativeObjectSetUnkillable.desc = "Object.SetUnkillable(uGuid, bUnkillable, sReason) -- confirmed in real scripts, same shape as SetInvincible";
@@ -258,8 +243,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("cashValue", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetCashValue.title = "Get Cash Value";
   NativeObjectGetCashValue.desc = "Object.GetCashValue(uGuid) -- confirmed in real scripts, e.g. a collectible's cash reward";
@@ -281,8 +264,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("physicsType", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetPhysicsType.title = "Get Physics Type";
   NativeObjectGetPhysicsType.desc = "Object.GetPhysicsType(uGuid) -- unconfirmed, no call sites in the decompiled corpus; even the return type is unknown, treat the output as opaque debug info only";
@@ -302,8 +283,6 @@
     this.addInput("nMass", "number");
     this.addProperty("nMass", 100);
     this.addWidget("number", "nMass", this.properties.nMass, function (v) { this.properties.nMass = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetMass.title = "Set Mass";
   NativeObjectSetMass.desc = "Object.SetMass(uGuid, nMass) -- unconfirmed, no call sites in the decompiled corpus";
@@ -344,8 +323,6 @@
     this.addWidget("number", "nPZ", this.properties.nPZ, function (v) { this.properties.nPZ = v; }.bind(this));
     this.addProperty("bFlag", true);
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectApplyPointImpulse.title = "Apply Point Impulse";
   NativeObjectApplyPointImpulse.desc = "Object.ApplyPointImpulse(uGuid, nX, nY, nZ, nPX, nPY, nPZ, bFlag) -- confirmed in real scripts; impulse vector + application-point offset, exact meaning of each component unconfirmed";
@@ -385,8 +362,6 @@
     this.addWidget("number", "nBlendTime", this.properties.nBlendTime, function (v) { this.properties.nBlendTime = v; }.bind(this));
     this.addProperty("bFlag", true);
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectPlayAnimation.title = "Play Animation";
   NativeObjectPlayAnimation.desc = "Object.PlayAnimation(uGuid, sAnimName, bLoop, sChannel, nBlendTime, bFlag) -- confirmed with all 6 args in real scripts";
@@ -411,8 +386,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sAnimName", "");
     this.addWidget("text", "sAnimName", this.properties.sAnimName, function (v) { this.properties.sAnimName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectStopAnimation.title = "Stop Animation";
   NativeObjectStopAnimation.desc = "Object.StopAnimation(uGuid, sAnimName) -- unconfirmed, no call sites in the decompiled corpus";
@@ -433,8 +406,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sChannel", "hijack");
     this.addWidget("text", "sChannel", this.properties.sChannel, function (v) { this.properties.sChannel = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectStopAnimationChannel.title = "Stop Animation Channel";
   NativeObjectStopAnimationChannel.desc = "Object.StopAnimationChannel(uGuid, sChannel) -- confirmed in real scripts, matches the channel argument seen in PlayAnimation";
@@ -453,8 +424,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectStopAllAnimation.title = "Stop All Animation";
   NativeObjectStopAllAnimation.desc = "Object.StopAllAnimation(uGuid) -- confirmed in real scripts";
@@ -476,8 +445,6 @@
     this.addWidget("text", "sAnimName", this.properties.sAnimName, function (v) { this.properties.sAnimName = v; }.bind(this));
     this.addProperty("bLoop", true);
     this.addWidget("toggle", "bLoop", this.properties.bLoop, function (v) { this.properties.bLoop = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectPlayMaterialAnimation.title = "Play Material Animation";
   NativeObjectPlayMaterialAnimation.desc = "Object.PlayMaterialAnimation(uGuid, sAnimName, bLoop) -- confirmed in real scripts";
@@ -499,8 +466,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sAnimName", "global_weapon_beacon");
     this.addWidget("text", "sAnimName", this.properties.sAnimName, function (v) { this.properties.sAnimName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectStopMaterialAnimation.title = "Stop Material Animation";
   NativeObjectStopMaterialAnimation.desc = "Object.StopMaterialAnimation(uGuid, sAnimName) -- confirmed in real scripts";
@@ -522,8 +487,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("hasWinch", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectHasWinch.title = "Has Winch";
   NativeObjectHasWinch.desc = "Object.HasWinch(uGuid) -- live-probe confirmed boolean; still no call sites in the decompiled corpus";
@@ -541,8 +504,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("state", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetWinchState.title = "Get Winch State";
   NativeObjectGetWinchState.desc = "Object.GetWinchState(uGuid) -- live-probe confirmed nil on non-winch objects; return shape on a real winch object is inferred (presumably a string state), not confirmed";
@@ -561,8 +522,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sState", "deployed");
     this.addWidget("text", "sState", this.properties.sState, function (v) { this.properties.sState = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetWinchState.title = "Set Winch State";
   NativeObjectSetWinchState.desc = "Object.SetWinchState(uGuid, sState) -- confirmed in real scripts, always seen with the state 'deployed'";
@@ -585,8 +544,6 @@
     this.addInput("heliGuid", "string");
     this.addProperty("heliGuid", "Ess.Player.character(0)");
     this.addWidget("text", "heliGuid", this.properties.heliGuid, function (v) { this.properties.heliGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectAttachCargoToWinch.title = "Attach Cargo To Winch";
   NativeObjectAttachCargoToWinch.desc = "Object.AttachCargoToWinch(uCargo, uHeli) -- confirmed in real scripts, cargo guid first then the winching vehicle guid";
@@ -605,8 +562,6 @@
     this.addInput("heliGuid", "string");
     this.addProperty("heliGuid", "Ess.Player.character(0)");
     this.addWidget("text", "heliGuid", this.properties.heliGuid, function (v) { this.properties.heliGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectDetachCargoFromWinch.title = "Detach Cargo From Winch";
   NativeObjectDetachCargoFromWinch.desc = "Object.DetachCargoFromWinch(uHeli) -- confirmed in real scripts, takes the winching vehicle guid";
@@ -623,8 +578,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("isWinched", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsWinched.title = "Is Winched";
   NativeObjectIsWinched.desc = "Object.IsWinched(uGuid) -- confirmed in real scripts";
@@ -642,8 +595,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("isWinching", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsWinching.title = "Is Winching";
   NativeObjectIsWinching.desc = "Object.IsWinching(uGuid) -- live-probe confirmed returns nil on non-winch objects (expected, not a bug); presumed boolean on a real winch object";
@@ -658,9 +609,13 @@
   // ============================================================
 
   // native/object/attach -- Object.Attach(uParentGuid, sHardpoint, uChildGuid) -> bResult, uAttachedGuid.
-  // Confirmed in real scripts. Modeled as a plain action node -- both return values are discarded, the same
-  // "fire and let the return go" treatment nodes-object.js's own damage/spawn/snapToGround nodes already
-  // give their discarded returns (see this file's own header comment).
+  // Confirmed in real scripts. bResult is discarded (same "let it go" treatment nodes-object.js's own
+  // damage/spawn/snapToGround nodes already give their discarded returns, see this file's own header
+  // comment), but uAttachedGuid is a real, useful handle -- captured as the "guid" output. NOT via
+  // CodeGen.emitNativeCapture: that helper only destructures a single value out of pcall
+  // (`local okVar, varName = pcall(...)`), which here would grab the boring bResult and silently drop
+  // uAttachedGuid. Instead this hand-writes a 3-value pcall capture that mirrors emitNativeCapture's own
+  // "nil on failure" shape (see codegen.js's emitNativeCapture).
   function NativeObjectAttach() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
@@ -672,16 +627,20 @@
     this.addInput("childGuid", "string");
     this.addProperty("childGuid", "Ess.Player.character(0)");
     this.addWidget("text", "childGuid", this.properties.childGuid, function (v) { this.properties.childGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
+    this.addOutput("guid", "string");
   }
   NativeObjectAttach.title = "Attach";
-  NativeObjectAttach.desc = "Object.Attach(uParentGuid, sHardpoint, uChildGuid) -- confirmed in real scripts, returns bResult, uAttachedGuid, both discarded here";
+  NativeObjectAttach.desc = "Object.Attach(uParentGuid, sHardpoint, uChildGuid) -- confirmed in real scripts, bResult discarded -> guid";
   NativeObjectAttach.prototype.onAction = function () {
     var parentGuid = resolveRawInput(this, 1, "parentGuid");   // input 0 is "exec"
     var sHardpoint = CodeGen.luaString(this.properties.sHardpoint);
     var childGuid = resolveRawInput(this, 2, "childGuid");
-    CodeGen.emitNative("Object.Attach(" + parentGuid + ", " + sHardpoint + ", " + childGuid + ")");
+    var expr = "Object.Attach(" + parentGuid + ", " + sHardpoint + ", " + childGuid + ")";
+    var okVar = CodeGen.newLocal("ok");
+    var guidVar = CodeGen.newLocal("attach");
+    CodeGen.emit("local " + okVar + ", _, " + guidVar + " = pcall(function() return " + expr + " end)");
+    CodeGen.emit("if not " + okVar + " then " + guidVar + " = nil end");
+    this.setOutputData(1, guidVar);   // "guid" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("native/object/attach", NativeObjectAttach);
@@ -696,8 +655,6 @@
     this.addInput("childOrAttachmentGuid", "string");
     this.addProperty("childOrAttachmentGuid", "Ess.Player.character(0)");
     this.addWidget("text", "childOrAttachmentGuid", this.properties.childOrAttachmentGuid, function (v) { this.properties.childOrAttachmentGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectDetach.title = "Detach";
   NativeObjectDetach.desc = "Object.Detach(uParentGuid, uChildOrAttachmentGuid) -- confirmed in real scripts, returns bResult, discarded here";
@@ -718,8 +675,6 @@
     this.addProperty("guidB", "Ess.Player.character(0)");
     this.addWidget("text", "guidB", this.properties.guidB, function (v) { this.properties.guidB = v; }.bind(this));
     this.addOutput("isAttached", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsAttached.title = "Is Attached";
   NativeObjectIsAttached.desc = "Object.IsAttached(uGuidA, uGuidB) -- confirmed in real scripts";
@@ -736,8 +691,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("parent", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetParent.title = "Get Parent";
   NativeObjectGetParent.desc = "Object.GetParent(uGuid) -- confirmed in real scripts, very common for walking an attachment/ownership chain";
@@ -758,8 +711,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("name", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetName.title = "Get Name";
   NativeObjectGetName.desc = "Object.GetName(uGuid) -- confirmed in real scripts, internal/debug name (contrast with GetLocalizedName)";
@@ -778,8 +729,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sName", "MyObject");
     this.addWidget("text", "sName", this.properties.sName, function (v) { this.properties.sName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetName.title = "Set Name";
   NativeObjectSetName.desc = "Object.SetName(uGuid, sName) -- confirmed in real scripts, returns a success boolean, discarded here";
@@ -801,8 +750,6 @@
     this.addProperty("bFlag", false);
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
     this.addOutput("localizedName", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetLocalizedName.title = "Get Localized Name";
   NativeObjectGetLocalizedName.desc = "Object.GetLocalizedName(uGuid, bFlag) -- very common in real scripts for HUD/display text; the trailing boolean's meaning is unconfirmed";
@@ -822,8 +769,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("modelName", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetModelName.title = "Get Model Name";
   NativeObjectGetModelName.desc = "Object.GetModelName(uGuid) -- live-probe confirmed to return userdata (an opaque model name-hash handle), NOT a real string despite the output slot -- don't expect string ops to work on it";
@@ -842,8 +787,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sModelName", "Veyron");
     this.addWidget("text", "sModelName", this.properties.sModelName, function (v) { this.properties.sModelName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetModelName.title = "Set Model Name";
   NativeObjectSetModelName.desc = "Object.SetModelName(uGuid, sModelName) -- confirmed in real scripts";
@@ -864,8 +807,6 @@
     this.addProperty("guidB", "Ess.Player.character(0)");
     this.addWidget("text", "guidB", this.properties.guidB, function (v) { this.properties.guidB = v; }.bind(this));
     this.addOutput("areEqual", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectAreEqual.title = "Are Equal";
   NativeObjectAreEqual.desc = "Object.AreEqual(uGuidA, uGuidB) -- live-probe confirmed boolean; still no call sites in the decompiled corpus";
@@ -886,8 +827,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("isAwake", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsAwake.title = "Is Awake";
   NativeObjectIsAwake.desc = "Object.IsAwake(uGuid) -- confirmed in real scripts, related to the hibernation/streaming system";
@@ -903,8 +842,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("isHibernated", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsHibernated.title = "Is Hibernated";
   NativeObjectIsHibernated.desc = "Object.IsHibernated(uGuid) -- confirmed in real scripts";
@@ -920,8 +857,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("distance", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectGetHibernationDistance.title = "Get Hibernation Distance";
   NativeObjectGetHibernationDistance.desc = "Object.GetHibernationDistance(uGuid) -- confirmed in real scripts";
@@ -942,8 +877,6 @@
     this.addInput("nDistance", "number");
     this.addProperty("nDistance", 100);
     this.addWidget("number", "nDistance", this.properties.nDistance, function (v) { this.properties.nDistance = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectSetHibernationDistance.title = "Set Hibernation Distance";
   NativeObjectSetHibernationDistance.desc = "Object.SetHibernationDistance(uGuid, nDistance) -- unconfirmed, no call sites in the decompiled corpus; presumed pair of the confirmed GetHibernationDistance/RevertHibernationDistance";
@@ -963,8 +896,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectRevertHibernationDistance.title = "Revert Hibernation Distance";
   NativeObjectRevertHibernationDistance.desc = "Object.RevertHibernationDistance(uGuid) -- unconfirmed, no call sites in the decompiled corpus";
@@ -981,8 +912,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("isTemplate", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsTemplate.title = "Is Template";
   NativeObjectIsTemplate.desc = "Object.IsTemplate(uGuid) -- confirmed in real scripts";
@@ -998,8 +927,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("isDisguised", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectIsDisguised.title = "Is Disguised";
   NativeObjectIsDisguised.desc = "Object.IsDisguised(uGuid) -- confirmed in real scripts";
@@ -1016,8 +943,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("vehicle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectInSeat.title = "In Seat";
   NativeObjectInSeat.desc = "Object.InSeat(uGuid) -- confirmed in real scripts, return value treated as a vehicle handle at the call site";
@@ -1033,8 +958,6 @@
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addOutput("vehicle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectInVehicle.title = "In Vehicle";
   NativeObjectInVehicle.desc = "Object.InVehicle(uGuid) -- confirmed in real scripts";
@@ -1056,8 +979,6 @@
     this.addWidget("number", "nDuration", this.properties.nDuration, function (v) { this.properties.nDuration = v; }.bind(this));
     this.addProperty("bFlag", true);
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectFadeOut.title = "Fade Out";
   NativeObjectFadeOut.desc = "Object.FadeOut(uGuid, nDuration, bFlag) -- confirmed with all 3 args in real scripts";
@@ -1083,8 +1004,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sCategory", "Vehicle");
     this.addWidget("text", "sCategory", this.properties.sCategory, function (v) { this.properties.sCategory = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectAddToDisposer.title = "Add To Disposer";
   NativeObjectAddToDisposer.desc = "Object.AddToDisposer(uGuid, sCategory) -- confirmed in real scripts";
@@ -1104,8 +1023,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectRemoveFromDisposer.title = "Remove From Disposer";
   NativeObjectRemoveFromDisposer.desc = "Object.RemoveFromDisposer(uGuid) -- unconfirmed, no call sites in the decompiled corpus; presumed counterpart to the confirmed AddToDisposer";
@@ -1123,8 +1040,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectOpenGate.title = "Open Gate";
   NativeObjectOpenGate.desc = "Object.OpenGate(uGuid) -- confirmed in real scripts";
@@ -1142,8 +1057,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   NativeObjectCloseGate.title = "Close Gate";
   NativeObjectCloseGate.desc = "Object.CloseGate(uGuid) -- confirmed in real scripts, always paired with OpenGate in the same modules";

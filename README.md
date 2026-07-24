@@ -57,16 +57,24 @@ captured lines, repeats for "false", then wraps both in the if/then/else text) �
 automatically so nesting (a Branch inside another Branch's true/false chain) reads correctly once
 downloaded, not flush-left regardless of depth.
 
-**Captured values** — some real Ess/native calls return something worth keeping: `Ess.Object.spawnAhead`/
-`.spawn`'s guid, `Marker.Add*`'s handle. `CodeGen.newLocal(prefix)` mints a fresh unique Lua local name
-("spawn1", "spawn2", ..., one counter per prefix) and `emitCapture`/`emitNativeCapture` emit `local <name> =
-<expr>` (the native variant also pcall-wraps and normalizes a failed call's result to `nil`, matching every
-guid-returning Ess function's own convention, rather than leaving the local holding pcall's raw error
-string on failure). The capturing node then does `this.setOutputData(slot, name)`, so the bare variable
-name splices into any downstream consumer exactly like any other raw-Lua-expression data wire — **Spawn
-Ahead**, **Object: Spawn**, and all five **Marker Add\*** natives now expose their return value this way;
-wire a spawn's `guid` output straight into Mark Enemy/AI Orders/Camera Watch instead of only ever spawning
-things you have no way to reference again in the same script. `Flow: Set Local` generalizes this to ANY raw
+**Captured values** — some real Ess/native calls return something worth keeping: a spawned entity's guid, a
+marker/objective/quest handle, a `cancel()`/`stop()` closure to undo something later, a success flag, a
+computed number. `CodeGen.newLocal(prefix)` mints a fresh unique Lua local name ("spawn1", "spawn2", ...,
+one counter per prefix) and `emitCapture`/`emitNativeCapture` emit `local <name> = <expr>` (the native
+variant also pcall-wraps and normalizes a failed call's result to `nil`, matching every guid-returning Ess
+function's own convention, rather than leaving the local holding pcall's raw error string on failure). The
+capturing node then does `this.setOutputData(slot, name)`, so the bare variable name splices into any
+downstream consumer exactly like any other raw-Lua-expression data wire. **38 nodes across both tiers**
+expose a captured return value this way now — Spawn Ahead, Object: Spawn, every `Easy.Spawn.*` and
+`Vehicle: Summon`, Mark Enemy/Objective/Zone, Camera Watch/Orbit, every Trigger's arm, every
+Objective/Quest/Contract/Sandbox starter, Cinematic: Play, Object: Damage/Snap To Ground, Vehicle: Fly
+To/Orbit Flight, all five **Marker Add\*** natives, Object: Attach, and HUD MessageBox: Add Message — wire a
+spawn's `guid` output straight into Mark Enemy/AI Orders/Camera Watch instead of only ever spawning things
+you have no way to reference again in the same script. Two of those calls genuinely return MORE than one
+value (Lua's native multi-return, not a single expression) and get a hand-written capture instead of the
+standard helper, each documented at its own call site: **Vehicle: Enter Seat Excluding** exposes `ok` and
+`seatUsed` as two separate outputs, and **Object: Attach** (native) discards the redundant `bResult` pcall
+already gives you and exposes only the useful `guid`. `Flow: Set Local` generalizes capture to ANY raw
 expression, not just a return value — useful both for readability and for a real correctness gotcha: wiring
 one data node's output into TWO different consumers without Set Local in between means each consumer
 splices the SAME expression text independently, so `Random Number` wired to two places gives two
@@ -78,8 +86,12 @@ consumer would read stale data.)
 
 **Flow Control nodes** (`src/nodes-flow.js`, registered under a third type-namespace, `"flow/*"`, alongside
 `"ess/*"` and `"native/*"`; its own sidebar category): `Compare` (`==`/`~=`/`</<=`/`>`/`>=`, operator picked
-from a combo), `And`/`Or`/`Not`, `Add`/`Subtract`/`Multiply`/`Divide`, `Set Local`, and `Log`
-(`Ess.Log(tostring(msg))`, for checking a captured value or confirming a branch took the path you expected).
+from a combo), `And`/`Or`/`Not`, `Add`/`Subtract`/`Multiply`/`Divide`, `Set Local`, `Log`
+(`Ess.Log(tostring(msg))`, for checking a captured value or confirming a branch took the path you expected),
+and `Custom Code` — the escape hatch: one multiline text widget (click it to open a real textarea, not a
+single-line prompt), spliced verbatim into the compiled script via a single `CodeGen.emit()` call, for
+anything without a dedicated node yet. It can reference any `__prefixN` local captured earlier in the same
+exec chain, but has no way to surface what's actually in scope, so getting a variable name right is on you.
 All the comparison/boolean/arithmetic nodes are pure-data, same "emit an expression, never a computed
 value" model as Random Number — chaining one into another (e.g. two `Compare`s into one `And`) works
 whenever the upstream node happens to execute first in the pre-pass, but isn't guaranteed by construction
@@ -187,9 +199,8 @@ map mode, and a handful of Camera/Relations primitives Ess's own wrappers don't 
 
 **Visually and mechanically distinct from every Ess node on purpose**, so a graph never quietly mixes
 "goes through Ess's safety net" with "doesn't" without it being obvious at a glance:
-- **Color** — every native node sets `this.color = CodeGen.NATIVE_COLOR; this.bgcolor =
-  CodeGen.NATIVE_BGCOLOR;` in its constructor (a dark amber/brown, vs. Ess nodes' default litegraph
-  styling), the same mechanism `OnKeyPress` already used for its own distinct green.
+- **Color** — a distinct warm shade per Native namespace (see "Node colors" below), not one shared brown
+  across all 193 nodes.
 - **Type namespace** — registers as `"native/<namespace>/<name>"`, never `"ess/*"`, and the left sidebar
   groups them under a separate "Native: X" category per namespace rather than merging into Ess's same-named
   category (`palette.js` derives this from the type string's own first segment).
@@ -213,9 +224,24 @@ itself flags as a bare, unclear `(...)` signature was left out, and unconfirmed-
 plainly in their `.desc`. All five `Marker.Add*` functions return a HANDLE, which now IS captured (see
 "Branching, captured values, and Flow Control" above) — each exposes a `handle` output via
 `CodeGen.emitNativeCapture`, wire it into Marker Remove/Pulse/etc. downstream instead of only ever placing
-a marker you have no way to clean up or modify again in the same script.
+a marker you have no way to clean up or modify again in the same script. Two more native calls got the same
+treatment: `Object: Attach` exposes the new attachment `guid`, and `Hud: MessageBox: Add Message` exposes
+the `msgIds` table real scripts reuse to modify/remove the message later.
 
-**Grand total: 368 nodes** (164 Ess + 193 Native + 11 Flow Control).
+## Node colors
+
+Every node's title-bar and body color is assigned centrally, in `palette.js`'s `colorize()` step (right
+after the stock-litegraph trim, before the sidebar is built) — see that file's header for the mechanism:
+`node.constructor.color`, litegraph's own fallback for a node that doesn't set its own instance `.color`.
+Rather than one color per raw category (36 of them — Ess's ~19 namespace segments, Native's 8, Flow
+Control), which would be more visual noise than signal at node-title-bar size, categories are grouped into
+**16 colors**: 7 cool-toned super-groups across the Ess tier (world & spawn, player & human, vehicle,
+encounter & AI, missions, presentation, utility), one warm-toned shade per Native sub-category
+(object/vehicle/human/player/marker/camera/hud/sound — object keeps its original brown), and one teal
+accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
+on the instance — a one-off entry-point marker, not a category.
+
+**Grand total: 369 nodes** (164 Ess + 193 Native + 12 Flow Control).
 
 ## What's deliberately not here yet
 

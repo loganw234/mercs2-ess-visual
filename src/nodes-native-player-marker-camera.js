@@ -2,8 +2,7 @@
  * straight off the wiki namespace pages (player.md, marker.md, camera.md), not Ess wrappers. See
  * codegen.js's "Native tier" section (read that first) for what distinguishes a Native node from every Ess
  * node in this repo:
- *   1. this.color = CodeGen.NATIVE_COLOR; this.bgcolor = CodeGen.NATIVE_BGCOLOR; -- set in every
- *      constructor below, right after the addInput/addOutput calls.
+ *   1. Its distinct on-canvas color -- centralized in palette.js's colorize(), not set per-constructor.
  *   2. CodeGen.emitNative(line) instead of CodeGen.emit(line) for every action node -- wraps the emitted
  *      line in pcall(function() ... end). Pure-data getter nodes still use plain setOutputData -- nothing
  *      here computes a real runtime value, every data wire carries a fragment of generated Lua SOURCE
@@ -60,8 +59,6 @@
   // (wifpmcinterior.lua). Distinct from the resident/-module WifPmcInterior.GetAvailableCostumes() wrapper.
   function PlayerGetAvailableCostumes() {
     this.addOutput("n", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetAvailableCostumes.title = "Get Available Costumes";
   PlayerGetAvailableCostumes.desc = "Player.GetAvailableCostumes() -- confirmed no-arg call";
@@ -77,8 +74,6 @@
     this.addInput("n", "number");
     this.addProperty("n", 3);
     this.addWidget("number", "n", this.properties.n, function (v) { this.properties.n = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetAvailableCostumes.title = "Set Available Costumes";
   PlayerSetAvailableCostumes.desc = "Player.SetAvailableCostumes(n)";
@@ -92,8 +87,6 @@
   // Native/Player/GetProfileCostume -- Player.GetProfileCostume() -> n. Confirmed no-arg call.
   function PlayerGetProfileCostume() {
     this.addOutput("n", "number");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetProfileCostume.title = "Get Profile Costume";
   PlayerGetProfileCostume.desc = "Player.GetProfileCostume() -- confirmed no-arg call, current outfit index";
@@ -110,8 +103,6 @@
     this.addInput("iIndex", "number");
     this.addProperty("iIndex", 0);
     this.addWidget("number", "iIndex", this.properties.iIndex, function (v) { this.properties.iIndex = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetProfileCostume.title = "Set Profile Costume";
   PlayerSetProfileCostume.desc = "Player.SetProfileCostume(iIndex) -- real call sites pass a zero-based index";
@@ -132,8 +123,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("sModelName", "");
     this.addWidget("text", "sModelName", this.properties.sModelName, function (v) { this.properties.sModelName = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetOutfit.title = "Set Outfit";
   PlayerSetOutfit.desc = "Player.SetOutfit(uGuid, sModelName) -- no confirmed example model name in the wiki, fill in a real one";
@@ -152,8 +141,6 @@
     this.addInput("idx", "number");
     this.addProperty("idx", 0);
     this.addWidget("number", "idx", this.properties.idx, function (v) { this.properties.idx = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetProfileCharacter.title = "Get Profile Character";
   PlayerGetProfileCharacter.desc = "Player.GetProfileCharacter(idx) -- idx is the local-player-slot index, live-confirmed";
@@ -170,8 +157,6 @@
     this.addInput("idx", "number");
     this.addProperty("idx", 0);
     this.addWidget("number", "idx", this.properties.idx, function (v) { this.properties.idx = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetProfileUpgrade.title = "Get Profile Upgrade";
   PlayerGetProfileUpgrade.desc = "Player.GetProfileUpgrade(idx) -- idx is the local-player-slot index, live-confirmed";
@@ -187,8 +172,6 @@
   // Native/Player/GetVehicleDisguise -- Player.GetVehicleDisguise() -> b. Confirmed no-arg boolean state.
   function PlayerGetVehicleDisguise() {
     this.addOutput("b", "boolean");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetVehicleDisguise.title = "Get Vehicle Disguise";
   PlayerGetVehicleDisguise.desc = "Player.GetVehicleDisguise() -- confirmed no-arg call";
@@ -203,8 +186,6 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetVehicleDisguise.title = "Set Vehicle Disguise";
   PlayerSetVehicleDisguise.desc = "Player.SetVehicleDisguise(bEnable)";
@@ -222,8 +203,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetVehicleDisguiseState.title = "Get Vehicle Disguise State";
   PlayerGetVehicleDisguiseState.desc = "Player.GetVehicleDisguiseState({Player = uGuid}) -- confirmed table-argument call";
@@ -243,8 +222,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("callback", "nil");
     this.addWidget("text", "callback (nil = none)", this.properties.callback, function (v) { this.properties.callback = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerVehicleDisguiseStart.title = "Vehicle Disguise (Start)";
   PlayerVehicleDisguiseStart.desc = "Player.VehicleDisguise({Player = uGuid, Callback = fCallback}) -- confirmed table-argument form";
@@ -264,8 +241,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerVehicleDisguiseRemove.title = "Vehicle Disguise (Remove)";
   PlayerVehicleDisguiseRemove.desc = "Player.VehicleDisguise({Player = uGuid, Remove = true}) -- confirmed table-argument form";
@@ -300,8 +275,6 @@
     this.addInput("nZ", "number");
     this.addProperty("nZ", 0);
     this.addWidget("number", "nZ", this.properties.nZ, function (v) { this.properties.nZ = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetSatelliteScanMode.title = "Set Satellite Scan Mode";
   PlayerSetSatelliteScanMode.desc = "Player.SetSatelliteScanMode(uPlayerGuid, bEnable, nX, nY, nZ) -- only the disable form (false, 0,0,0) is live-confirmed";
@@ -353,8 +326,6 @@
     this.addWidget("number", "nMaxZoomDelta", this.properties.nMaxZoomDelta, function (v) { this.properties.nMaxZoomDelta = v; }.bind(this));
     this.addProperty("bUseMinigame", false);
     this.addWidget("toggle", "bUseMinigame", this.properties.bUseMinigame, function (v) { this.properties.bUseMinigame = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetPDAMapMode.title = "Set PDA Map Mode";
   PlayerSetPDAMapMode.desc = "Player.SetPDAMapMode(uPlayerGuid, bEnable, nX, nY, nZ, nRadius, nMinZoomDelta, nMaxZoomDelta, bUseMinigame)";
@@ -386,8 +357,6 @@
     this.addWidget("toggle", "bFlag", this.properties.bFlag, function (v) { this.properties.bFlag = v; }.bind(this));
     this.addProperty("callback", "nil");
     this.addWidget("text", "callback (nil = none)", this.properties.callback, function (v) { this.properties.callback = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetPDAMapModeCallback.title = "Set PDA Map Mode Callback";
   PlayerSetPDAMapModeCallback.desc = "Player.SetPDAMapModeCallback(uPlayerGuid, bFlag, fCallback) -- optional trailing tArgs table omitted";
@@ -408,8 +377,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("callback", "nil");
     this.addWidget("text", "callback (nil = none)", this.properties.callback, function (v) { this.properties.callback = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetPDAMapModeCancelCallback.title = "Set PDA Map Mode Cancel Callback";
   PlayerSetPDAMapModeCancelCallback.desc = "Player.SetPDAMapModeCancelCallback(uPlayerGuid, fCallback)";
@@ -427,8 +394,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerRequestPDAMapModeCancel.title = "Request PDA Map Mode Cancel";
   PlayerRequestPDAMapModeCancel.desc = "Player.RequestPDAMapModeCancel(uPlayerGuid)";
@@ -449,8 +414,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("callback", "nil");
     this.addWidget("text", "callback (nil = none)", this.properties.callback, function (v) { this.properties.callback = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerRequestPDAMapModeExit.title = "Request PDA Map Mode Exit";
   PlayerRequestPDAMapModeExit.desc = "Player.RequestPDAMapModeExit(uPlayerGuid, fCallback) -- optional trailing tArgs table omitted";
@@ -477,8 +440,6 @@
     this.addInput("boundaryGuid", "string");
     this.addProperty("boundaryGuid", "nil");
     this.addWidget("text", "boundaryGuid (nil = must wire in)", this.properties.boundaryGuid, function (v) { this.properties.boundaryGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerAddBoundary.title = "Add Boundary";
   PlayerAddBoundary.desc = "Player.AddBoundary(uPlayerGuid, uBoundaryGuid) -- boundaryGuid has no sensible default, wire/type a real one";
@@ -501,8 +462,6 @@
     this.addInput("boundaryGuid", "string");
     this.addProperty("boundaryGuid", "nil");
     this.addWidget("text", "boundaryGuid (nil = must wire in)", this.properties.boundaryGuid, function (v) { this.properties.boundaryGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerRemoveBoundary.title = "Remove Boundary";
   PlayerRemoveBoundary.desc = "Player.RemoveBoundary(uPlayerGuid, uBoundaryGuid)";
@@ -522,8 +481,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerRemoveAllBoundary.title = "Remove All Boundary";
   PlayerRemoveAllBoundary.desc = "Player.RemoveAllBoundary(uPlayerGuid) -- targets one player, unlike Ess.Player.removeBoundaries()";
@@ -542,8 +499,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetAllBoundaryGuid.title = "Get All Boundary Guid";
   PlayerGetAllBoundaryGuid.desc = "Player.GetAllBoundaryGuid(uPlayerGuid) -- unconfirmed, no call sites in the decompiled corpus";
@@ -562,8 +517,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("callback", "nil");
     this.addWidget("text", "callback (nil = none)", this.properties.callback, function (v) { this.properties.callback = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetBoundaryCallback.title = "Set Boundary Callback";
   PlayerSetBoundaryCallback.desc = "Player.SetBoundaryCallback(uPlayerGuid, fCallback)";
@@ -583,8 +536,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bState", true);
     this.addWidget("toggle", "bState", this.properties.bState, function (v) { this.properties.bState = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetOutBoundary.title = "Set Out Boundary";
   PlayerSetOutBoundary.desc = "Player.SetOutBoundary(uPlayerGuid, bState)";
@@ -602,8 +553,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetOutBoundary.title = "Get Out Boundary";
   PlayerGetOutBoundary.desc = "Player.GetOutBoundary(uPlayerGuid) -- unconfirmed, presumed counterpart to SetOutBoundary";
@@ -629,8 +578,6 @@
     this.addInput("nZ", "number");
     this.addProperty("nZ", 0);
     this.addWidget("number", "nZ", this.properties.nZ, function (v) { this.properties.nZ = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerIsPositionOutBoundary.title = "Is Position Out Boundary";
   PlayerIsPositionOutBoundary.desc = "Player.IsPositionOutBoundary(uPlayerGuid, nX, nY, nZ) -- confirmed (PDA map code)";
@@ -649,8 +596,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerIsBoundaryDeath.title = "Is Boundary Death";
   PlayerIsBoundaryDeath.desc = "Player.IsBoundaryDeath(uCharacterGuid) -- confirmed";
@@ -673,8 +618,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetAimMode.title = "Set Aim Mode";
   PlayerSetAimMode.desc = "Player.SetAimMode(uPlayerGuid, bEnable)";
@@ -696,8 +639,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetGrappleEnabled.title = "Set Grapple Enabled";
   PlayerSetGrappleEnabled.desc = "Player.SetGrappleEnabled(uGuid, bEnable)";
@@ -717,8 +658,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetScopeEnabled.title = "Set Scope Enabled";
   PlayerSetScopeEnabled.desc = "Player.SetScopeEnabled(uPlayerGuid, bEnable)";
@@ -739,8 +678,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetHealthClamp.title = "Set Health Clamp";
   PlayerSetHealthClamp.desc = "Player.SetHealthClamp(uPlayerGuid, bEnable)";
@@ -762,8 +699,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetSeatMovementLocks.title = "Set Seat Movement Locks";
   PlayerSetSeatMovementLocks.desc = "Player.SetSeatMovementLocks(uPlayerGuid, bEnable)";
@@ -781,8 +716,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetControlBindingType.title = "Get Control Binding Type";
   PlayerGetControlBindingType.desc = "Player.GetControlBindingType(uPlayerGuid) -- confirmed";
@@ -801,8 +734,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetInPmc.title = "Set In Pmc";
   PlayerSetInPmc.desc = "Player.SetInPmc(uPlayerGuid, bEnable)";
@@ -823,8 +754,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", true);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetSurvivalMode.title = "Set Survival Mode";
   PlayerSetSurvivalMode.desc = "Player.SetSurvivalMode(uPlayerGuid, bEnable)";
@@ -844,8 +773,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerInCinematicMode.title = "In Cinematic Mode";
   PlayerInCinematicMode.desc = "Player.InCinematicMode(uPlayerGuid) -- confirmed";
@@ -867,8 +794,6 @@
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
     this.addProperty("bEnable", false);
     this.addWidget("toggle", "bEnable", this.properties.bEnable, function (v) { this.properties.bEnable = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerSetCinematicMode.title = "Set Cinematic Mode";
   PlayerSetCinematicMode.desc = "Player.SetCinematicMode(uPlayerGuid, bEnable) -- confirmed 2-arg baseline; richer forms with unconfirmed extra args exist but are omitted";
@@ -889,8 +814,6 @@
   // canonical return form is ambiguous -- still a single value either way, fits this repo's one-output model.
   function PlayerGetPlayerStart() {
     this.addOutput("v", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetPlayerStart.title = "Get Player Start";
   PlayerGetPlayerStart.desc = "Player.GetPlayerStart() -- confirmed no-arg call; return may be a position vector OR a named-location string, form unconfirmed";
@@ -906,8 +829,6 @@
   function PlayerClearPlayerDB() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerClearPlayerDB.title = "Clear Player DB";
   PlayerClearPlayerDB.desc = "Player.ClearPlayerDB()";
@@ -924,8 +845,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Player.GetLocalPlayer()");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerClearGPS.title = "Clear GPS";
   PlayerClearGPS.desc = "Player.ClearGPS(uPlayerGuid)";
@@ -940,8 +859,6 @@
   // (mrxguipda.lua), returns a table.
   function PlayerGetAllTargetMarkerPos() {
     this.addOutput("t", "table");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   PlayerGetAllTargetMarkerPos.title = "Get All Target Marker Pos";
   PlayerGetAllTargetMarkerPos.desc = "Player.GetAllTargetMarkerPos() -- confirmed no-arg call, returns a table";
@@ -986,8 +903,6 @@
     this.addProperty("nRadius", 0.05);
     this.addWidget("number", "nRadius", this.properties.nRadius, function (v) { this.properties.nRadius = v; }.bind(this));
     this.addOutput("handle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAdd.title = "Marker Add";
   MarkerAdd.desc = "Marker.Add(nOffsetX, nOffsetY, nOffsetZ, uGuid, nR, nG, nB, nRadius) -> handle";
@@ -1029,8 +944,6 @@
     this.addProperty("nB", 255);
     this.addWidget("number", "nB", this.properties.nB, function (v) { this.properties.nB = v; }.bind(this));
     this.addOutput("handle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAdd3D.title = "Marker Add3D";
   MarkerAdd3D.desc = "Marker.Add3D(uGuid, sIconName, nR, nG, nB) -> handle -- optional trailing nWidth omitted";
@@ -1076,8 +989,6 @@
     this.addProperty("nAlpha", 255);
     this.addWidget("number", "nAlpha", this.properties.nAlpha, function (v) { this.properties.nAlpha = v; }.bind(this));
     this.addOutput("handle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAddBlip.title = "Marker Add Blip";
   MarkerAddBlip.desc = "Marker.AddBlip(uGuid, sTextureName, nSize, nR, nG, nB, nAlpha) -> handle -- live-tested core form";
@@ -1122,8 +1033,6 @@
     this.addProperty("nThickness", 0.25);
     this.addWidget("number", "nThickness", this.properties.nThickness, function (v) { this.properties.nThickness = v; }.bind(this));
     this.addOutput("handle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAddDisc.title = "Marker Add Disc";
   MarkerAddDisc.desc = "Marker.AddDisc(uGuidOrLocation, nRadius, nR, nG, nB, nThickness) -> handle -- first arg accepts a uGuid or a location-vector expression";
@@ -1172,8 +1081,6 @@
     this.addProperty("nB", 255);
     this.addWidget("number", "nB", this.properties.nB, function (v) { this.properties.nB = v; }.bind(this));
     this.addOutput("handle", "string");
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerAddTripwire.title = "Marker Add Tripwire";
   MarkerAddTripwire.desc = "Marker.AddTripwire(nX, nY, nZ, nWidth, nYaw, nR, nG, nB) -> handle";
@@ -1211,8 +1118,6 @@
     this.addInput("nB", "number");
     this.addProperty("nB", 0);
     this.addWidget("number", "nB", this.properties.nB, function (v) { this.properties.nB = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerPulse.title = "Marker Pulse";
   MarkerPulse.desc = "Marker.Pulse(uGuid, nR, nG, nB) -- uGuid is the target object's guid, NOT a marker handle";
@@ -1234,8 +1139,6 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerHaltPulse.title = "Marker Halt Pulse";
   MarkerHaltPulse.desc = "Marker.HaltPulse(uGuid) -- uGuid is the target object's guid, NOT a marker handle";
@@ -1256,8 +1159,6 @@
     this.addInput("handle", "string");
     this.addProperty("handle", "nil");
     this.addWidget("text", "handle (nil = must wire in)", this.properties.handle, function (v) { this.properties.handle = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerRemove.title = "Marker Remove";
   MarkerRemove.desc = "Marker.Remove(uMarker) -- marker HANDLE, not a uGuid; this compiler can't auto-capture an Add* return value, wire/type a real handle expression in";
@@ -1285,8 +1186,6 @@
     this.addInput("nB", "number");
     this.addProperty("nB", 255);
     this.addWidget("number", "nB", this.properties.nB, function (v) { this.properties.nB = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerSetColor.title = "Marker Set Color";
   MarkerSetColor.desc = "Marker.SetColor(uMarker, nR, nG, nB) -- unconfirmed, no call sites in the decompiled corpus; marker HANDLE input, not a uGuid";
@@ -1311,8 +1210,6 @@
     this.addInput("targetGuid", "string");
     this.addProperty("targetGuid", "Ess.Player.character(0)");
     this.addWidget("text", "targetGuid", this.properties.targetGuid, function (v) { this.properties.targetGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerSetFollowGuid.title = "Marker Set Follow Guid";
   MarkerSetFollowGuid.desc = "Marker.SetFollowGuid(uMarker, uGuid) -- unconfirmed, no call sites in the decompiled corpus";
@@ -1345,8 +1242,6 @@
     this.addInput("nZ", "number");
     this.addProperty("nZ", 0);
     this.addWidget("number", "nZ", this.properties.nZ, function (v) { this.properties.nZ = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerSetLocation.title = "Marker Set Location";
   MarkerSetLocation.desc = "Marker.SetLocation(uMarker, nX, nY, nZ) -- unconfirmed, no call sites in the decompiled corpus; marker HANDLE input, not a uGuid";
@@ -1371,8 +1266,6 @@
     this.addInput("nScale", "number");
     this.addProperty("nScale", 1);
     this.addWidget("number", "nScale", this.properties.nScale, function (v) { this.properties.nScale = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   MarkerSetScale.title = "Marker Set Scale";
   MarkerSetScale.desc = "Marker.SetScale(uMarker, nScale) -- unconfirmed, no call sites in the decompiled corpus; marker HANDLE input, not a uGuid";
@@ -1409,8 +1302,6 @@
     this.addInput("targetActor", "string");
     this.addProperty("targetActor", "Ess.Player.character(0)");
     this.addWidget("text", "targetActor", this.properties.targetActor, function (v) { this.properties.targetActor = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   CameraSetShot.title = "Camera Set Shot";
   CameraSetShot.desc = "Camera.SetShot(uCameraGuid, sShotName, uBaseActor, uTargetActor) -- confirmed 4-arg form; optional trailing bFlag omitted";
@@ -1437,8 +1328,6 @@
     this.addInput("nPitch", "number");
     this.addProperty("nPitch", 0.3);
     this.addWidget("number", "nPitch", this.properties.nPitch, function (v) { this.properties.nPitch = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   CameraSetPitch.title = "Camera Set Pitch";
   CameraSetPitch.desc = "Camera.SetPitch(uCameraGuid, nPitch)";
@@ -1457,8 +1346,6 @@
     this.addInput("camGuid", "string");
     this.addProperty("camGuid", "Ess.Player.camera(0)");
     this.addWidget("text", "camGuid", this.properties.camGuid, function (v) { this.properties.camGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   CameraGetPitch.title = "Camera Get Pitch";
   CameraGetPitch.desc = "Camera.GetPitch(uCameraGuid) -- unconfirmed, no call sites in the decompiled corpus; presumed counterpart to SetPitch";
@@ -1477,8 +1364,6 @@
     this.addInput("camGuid", "string");
     this.addProperty("camGuid", "Ess.Player.camera(0)");
     this.addWidget("text", "camGuid", this.properties.camGuid, function (v) { this.properties.camGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   CameraStopBlending.title = "Camera Stop Blending";
   CameraStopBlending.desc = "Camera.StopBlending(uCameraGuid) -- confirmed, only call site guards for the function's existence first";
@@ -1498,8 +1383,6 @@
     this.addInput("camGuid", "string");
     this.addProperty("camGuid", "Ess.Player.camera(0)");
     this.addWidget("text", "camGuid", this.properties.camGuid, function (v) { this.properties.camGuid = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   CameraGetFOV.title = "Camera Get FOV (native)";
   CameraGetFOV.desc = "Camera.GetFOV(uCameraGuid) -- unconfirmed, no call sites; the separate top-level Camera.* FOV pair, NOT Graphics.Camera.SetFovParams (already covered by Ess.Camera.fov)";
@@ -1521,8 +1404,6 @@
     this.addInput("nFOV", "number");
     this.addProperty("nFOV", 30);
     this.addWidget("number", "nFOV", this.properties.nFOV, function (v) { this.properties.nFOV = v; }.bind(this));
-    this.color = CodeGen.NATIVE_COLOR;
-    this.bgcolor = CodeGen.NATIVE_BGCOLOR;
   }
   CameraSetFOV.title = "Camera Set FOV (native)";
   CameraSetFOV.desc = "Camera.SetFOV(uCameraGuid, nFOV) -- unconfirmed, no call sites; the separate top-level Camera.* FOV pair, NOT Graphics.Camera.SetFovParams (already covered by Ess.Camera.fov)";

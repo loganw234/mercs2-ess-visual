@@ -112,6 +112,35 @@
   LiteGraph.registerNodeType("flow/log", FlowLog);
 
   // ============================================================
+  // Flow/CustomCode -- an escape hatch: splices a raw block of Lua text verbatim into the compiled
+  // script, for anything this tool doesn't have a dedicated node for yet. Click the widget to open a
+  // multiline editor (litegraph's "text" widget supports a {multiline: true} option that swaps its
+  // click-to-edit prompt for a textarea -- same widget TYPE as every other text field in this repo, just
+  // with that option set).
+  //
+  // No data pins -- the block can reference any __prefixN local another node earlier in the SAME exec
+  // chain already captured (see codegen.js's capture header for the ordering rule that applies), but this
+  // node has no way to surface what's actually in scope, so getting a variable name right is on you.
+  // Splicing is a single CodeGen.emit() call -- emit() indents once per call, not once per source line
+  // inside the string, so a multi-line block nested in an if/branch reads flush-left past its first line.
+  // Harmless for Lua (whitespace isn't significant), just a cosmetic wrinkle in the downloaded file.
+  // ============================================================
+  function CustomCode() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("code", "-- your Lua here");
+    this.addWidget("text", "code", this.properties.code, function (v) { this.properties.code = v; }.bind(this), { multiline: true });
+    this.size = [220, 80];
+  }
+  CustomCode.title = "Custom Code";
+  CustomCode.desc = "Splices a raw block of Lua text verbatim into the compiled script -- an escape hatch for anything without a dedicated node yet.";
+  CustomCode.prototype.onAction = function () {
+    CodeGen.emit(this.properties.code);
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("flow/customcode", CustomCode);
+
+  // ============================================================
   // Pure-data comparison/boolean/arithmetic nodes -- all emit a Lua EXPRESSION as text (never a computed
   // value, same model as Random Number), meant mainly to feed Branch's "condition" or another one of these
   // without hand-typing Lua operators, though hand-typing directly into Branch's condition text widget

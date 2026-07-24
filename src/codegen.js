@@ -66,18 +66,14 @@ window.CodeGen = (function () {
   // "Native" nodes (nodes-native-*.js) instead emit BARE engine calls -- Object.SetPosition, Camera.Shake,
   // Marker.Add, and so on -- straight from the wiki's namespace reference docs, not through Ess at all.
   // These exist for capability Ess doesn't wrap yet (animation, winch/cargo, attachment, raw markers,
-  // vehicle doors/turrets, ...). Two things distinguish them from every Ess node in this repo:
-  //   1. NATIVE_COLOR/NATIVE_BGCOLOR -- every native node sets `this.color = CodeGen.NATIVE_COLOR;
-  //      this.bgcolor = CodeGen.NATIVE_BGCOLOR;` in its constructor (same mechanism On Key Press already
-  //      uses for its own distinct green), so they're visually unmistakable on canvas at a glance: this is
-  //      a raw call, not going through Ess's higher-level logic or state tracking.
-  //   2. emitNative(line) below wraps the call in `pcall(function() ... end)` -- Ess itself pcalls nearly
-  //      everything as a blanket defensive habit (see e.g. src/11_object.lua), and native nodes match that
-  //      even though the wiki's own live-probe notes found these engine namespaces mostly fail SAFE on bad
-  //      args (return nil, not a thrown error) -- pcall is defense in depth against the cases that aren't
-  //      confirmed safe, not a response to a specific known crash.
-  var NATIVE_COLOR = "#5a3a1a";
-  var NATIVE_BGCOLOR = "#2b1c0d";
+  // vehicle doors/turrets, ...). What distinguishes them from every Ess node in this repo:
+  // emitNative(line) below wraps the call in `pcall(function() ... end)` -- Ess itself pcalls nearly
+  // everything as a blanket defensive habit (see e.g. src/11_object.lua), and native nodes match that
+  // even though the wiki's own live-probe notes found these engine namespaces mostly fail SAFE on bad
+  // args (return nil, not a thrown error) -- pcall is defense in depth against the cases that aren't
+  // confirmed safe, not a response to a specific known crash. (Their distinct on-canvas color used to be
+  // set here too, via NATIVE_COLOR/NATIVE_BGCOLOR constants each native node's constructor read from --
+  // that's now centralized in palette.js's colorize() instead, see its header comment.)
 
   function emitNative(line) { emit("pcall(function() " + line + " end)"); }
 
@@ -122,7 +118,7 @@ window.CodeGen = (function () {
 
   return {
     reset: reset, emit: emit, luaString: luaString, resolveNumberInput: resolveNumberInput, getLines: getLines,
-    emitNative: emitNative, emitNativeCapture: emitNativeCapture, NATIVE_COLOR: NATIVE_COLOR, NATIVE_BGCOLOR: NATIVE_BGCOLOR,
+    emitNative: emitNative, emitNativeCapture: emitNativeCapture,
     pushScope: pushScope, popScope: popScope, emitLines: emitLines, newLocal: newLocal, emitCapture: emitCapture
   };
 })();

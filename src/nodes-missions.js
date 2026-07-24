@@ -38,16 +38,19 @@
     this.addWidget("text", "label", this.properties.label, function (v) { this.properties.label = v; }.bind(this));
     this.addProperty("onDone", "nil");
     this.addWidget("text", "onDone (nil = none)", this.properties.onDone, function (v) { this.properties.onDone = v; }.bind(this));
+    this.addOutput("objective", "string");
   }
   ObjectiveReach.title = "Objective: Reach";
-  ObjectiveReach.desc = "Ess.Easy.Objective.reach(x, y, z, r, label, onDone)";
+  ObjectiveReach.desc = "Ess.Easy.Objective.reach(x, y, z, r, label, onDone) -> objective";
   ObjectiveReach.prototype.onAction = function () {
     var x = CodeGen.resolveNumberInput(this, 1, "x");   // input 0 is "exec"
     var y = CodeGen.resolveNumberInput(this, 2, "y");
     var z = CodeGen.resolveNumberInput(this, 3, "z");
     var r = CodeGen.resolveNumberInput(this, 4, "r");
     var label = CodeGen.luaString(this.properties.label);
-    CodeGen.emit("Ess.Easy.Objective.reach(" + x + ", " + y + ", " + z + ", " + r + ", " + label + ", " + this.properties.onDone + ")");
+    var varName = CodeGen.newLocal("objective");
+    CodeGen.emitCapture(varName, "Ess.Easy.Objective.reach(" + x + ", " + y + ", " + z + ", " + r + ", " + label + ", " + this.properties.onDone + ")");
+    this.setOutputData(1, varName);   // "objective" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/objective/reach", ObjectiveReach);
@@ -67,13 +70,16 @@
     this.addWidget("text", "label", this.properties.label, function (v) { this.properties.label = v; }.bind(this));
     this.addProperty("onDone", "nil");
     this.addWidget("text", "onDone (nil = none)", this.properties.onDone, function (v) { this.properties.onDone = v; }.bind(this));
+    this.addOutput("objective", "string");
   }
   ObjectiveDestroy.title = "Objective: Destroy";
-  ObjectiveDestroy.desc = "Ess.Easy.Objective.destroy(guid, label, onDone)";
+  ObjectiveDestroy.desc = "Ess.Easy.Objective.destroy(guid, label, onDone) -> objective";
   ObjectiveDestroy.prototype.onAction = function () {
     var guid = CodeGen.resolveNumberInput(this, 1, "guid");  // raw Lua expression, spliced unquoted
     var label = CodeGen.luaString(this.properties.label);
-    CodeGen.emit("Ess.Easy.Objective.destroy(" + guid + ", " + label + ", " + this.properties.onDone + ")");
+    var varName = CodeGen.newLocal("objective");
+    CodeGen.emitCapture(varName, "Ess.Easy.Objective.destroy(" + guid + ", " + label + ", " + this.properties.onDone + ")");
+    this.setOutputData(1, varName);   // "objective" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/objective/destroy", ObjectiveDestroy);
@@ -104,9 +110,10 @@
     this.addWidget("text", "label", this.properties.label, function (v) { this.properties.label = v; }.bind(this));
     this.addProperty("onDone", "nil");
     this.addWidget("text", "onDone (nil = none)", this.properties.onDone, function (v) { this.properties.onDone = v; }.bind(this));
+    this.addOutput("objective", "string");
   }
   ObjectiveClear.title = "Objective: Clear";
-  ObjectiveClear.desc = "Ess.Easy.Objective.clear(x, y, z, r, faction, label, onDone)";
+  ObjectiveClear.desc = "Ess.Easy.Objective.clear(x, y, z, r, faction, label, onDone) -> objective";
   ObjectiveClear.prototype.onAction = function () {
     var x = CodeGen.resolveNumberInput(this, 1, "x");   // input 0 is "exec"
     var y = CodeGen.resolveNumberInput(this, 2, "y");
@@ -114,7 +121,9 @@
     var r = CodeGen.resolveNumberInput(this, 4, "r");
     var faction = CodeGen.luaString(this.properties.faction);
     var label = CodeGen.luaString(this.properties.label);
-    CodeGen.emit("Ess.Easy.Objective.clear(" + x + ", " + y + ", " + z + ", " + r + ", " + faction + ", " + label + ", " + this.properties.onDone + ")");
+    var varName = CodeGen.newLocal("objective");
+    CodeGen.emitCapture(varName, "Ess.Easy.Objective.clear(" + x + ", " + y + ", " + z + ", " + r + ", " + faction + ", " + label + ", " + this.properties.onDone + ")");
+    this.setOutputData(1, varName);   // "objective" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/objective/clear", ObjectiveClear);
@@ -134,13 +143,16 @@
     this.addWidget("text", "onDone (nil = none)", this.properties.onDone, function (v) { this.properties.onDone = v; }.bind(this));
     this.addProperty("onFail", "nil");
     this.addWidget("text", "onFail (nil = none)", this.properties.onFail, function (v) { this.properties.onFail = v; }.bind(this));
+    this.addOutput("objective", "string");
   }
   ObjectiveSurvive.title = "Objective: Survive";
-  ObjectiveSurvive.desc = "Ess.Easy.Objective.survive(seconds, label, onDone, onFail)";
+  ObjectiveSurvive.desc = "Ess.Easy.Objective.survive(seconds, label, onDone, onFail) -> objective";
   ObjectiveSurvive.prototype.onAction = function () {
     var seconds = CodeGen.resolveNumberInput(this, 1, "seconds");  // input 0 is "exec"
     var label = CodeGen.luaString(this.properties.label);
-    CodeGen.emit("Ess.Easy.Objective.survive(" + seconds + ", " + label + ", " + this.properties.onDone + ", " + this.properties.onFail + ")");
+    var varName = CodeGen.newLocal("objective");
+    CodeGen.emitCapture(varName, "Ess.Easy.Objective.survive(" + seconds + ", " + label + ", " + this.properties.onDone + ", " + this.properties.onFail + ")");
+    this.setOutputData(1, varName);   // "objective" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/objective/survive", ObjectiveSurvive);
@@ -157,11 +169,14 @@
     this.addWidget("text", "steps", this.properties.steps, function (v) { this.properties.steps = v; }.bind(this));
     this.addProperty("onComplete", "nil");
     this.addWidget("text", "onComplete (nil = none)", this.properties.onComplete, function (v) { this.properties.onComplete = v; }.bind(this));
+    this.addOutput("quest", "string");
   }
   QuestCreate.title = "Quest: Create";
-  QuestCreate.desc = "Ess.Easy.Quest(steps, onComplete)";
+  QuestCreate.desc = "Ess.Easy.Quest(steps, onComplete) -> quest";
   QuestCreate.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Quest(" + this.properties.steps + ", " + this.properties.onComplete + ")");
+    var varName = CodeGen.newLocal("quest");
+    CodeGen.emitCapture(varName, "Ess.Easy.Quest(" + this.properties.steps + ", " + this.properties.onComplete + ")");
+    this.setOutputData(1, varName);   // "quest" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/quest/create", QuestCreate);
@@ -178,12 +193,15 @@
     this.addWidget("text", "title", this.properties.title, function (v) { this.properties.title = v; }.bind(this));
     this.addProperty("spawns", "{ {'Veyron', 0,0,0, 0} }");
     this.addWidget("text", "spawns", this.properties.spawns, function (v) { this.properties.spawns = v; }.bind(this));
+    this.addOutput("sId", "string");
   }
   ContractDestroy.title = "Contract: Destroy";
-  ContractDestroy.desc = "Ess.Easy.Contract.destroy(title, spawns) -- opts omitted (nil-safe), see file header";
+  ContractDestroy.desc = "Ess.Easy.Contract.destroy(title, spawns) -- opts omitted (nil-safe), see file header -> sId";
   ContractDestroy.prototype.onAction = function () {
     var title = CodeGen.luaString(this.properties.title);
-    CodeGen.emit("Ess.Easy.Contract.destroy(" + title + ", " + this.properties.spawns + ")");
+    var varName = CodeGen.newLocal("sId");
+    CodeGen.emitCapture(varName, "Ess.Easy.Contract.destroy(" + title + ", " + this.properties.spawns + ")");
+    this.setOutputData(1, varName);   // "sId" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/contract/destroy", ContractDestroy);
@@ -202,13 +220,16 @@
     this.addInput("radius", "number");
     this.addProperty("radius", 8);
     this.addWidget("number", "radius", this.properties.radius, function (v) { this.properties.radius = v; }.bind(this));
+    this.addOutput("sId", "string");
   }
   ContractReach.title = "Contract: Reach";
-  ContractReach.desc = "Ess.Easy.Contract.reach(title, at, radius) -- opts omitted (nil-safe), see file header";
+  ContractReach.desc = "Ess.Easy.Contract.reach(title, at, radius) -- opts omitted (nil-safe), see file header -> sId";
   ContractReach.prototype.onAction = function () {
     var radius = CodeGen.resolveNumberInput(this, 1, "radius");  // input 0 is "exec"
     var title = CodeGen.luaString(this.properties.title);
-    CodeGen.emit("Ess.Easy.Contract.reach(" + title + ", " + this.properties.at + ", " + radius + ")");
+    var varName = CodeGen.newLocal("sId");
+    CodeGen.emitCapture(varName, "Ess.Easy.Contract.reach(" + title + ", " + this.properties.at + ", " + radius + ")");
+    this.setOutputData(1, varName);   // "sId" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/contract/reach", ContractReach);
@@ -224,11 +245,14 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("id", "arena1");
     this.addWidget("text", "id", this.properties.id, function (v) { this.properties.id = v; }.bind(this));
+    this.addOutput("success", "string");
   }
   SandboxArena.title = "Sandbox: Arena";
-  SandboxArena.desc = "Ess.Easy.Sandbox.arena(id) -- opts omitted (nil-safe), see file header";
+  SandboxArena.desc = "Ess.Easy.Sandbox.arena(id) -- opts omitted (nil-safe), see file header -> success";
   SandboxArena.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Sandbox.arena(" + CodeGen.luaString(this.properties.id) + ")");
+    var varName = CodeGen.newLocal("success");
+    CodeGen.emitCapture(varName, "Ess.Easy.Sandbox.arena(" + CodeGen.luaString(this.properties.id) + ")");
+    this.setOutputData(1, varName);   // "success" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/sandbox/arena", SandboxArena);

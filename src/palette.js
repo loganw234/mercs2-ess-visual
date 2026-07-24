@@ -1,4 +1,4 @@
-/* palette.js -- two jobs, both about making the editor legible instead of a bare litegraph canvas:
+/* palette.js -- three jobs, all about making the editor legible instead of a bare litegraph canvas:
  *
  * 1. TRIM: litegraph.js ships ~200 bundled stock node types (basic/*, math/*, audio/*, midi/*, network/*,
  *    geometry/*, ...) meant for its general dataflow/ComfyUI-style use cases. compiler.js only understands
@@ -7,7 +7,18 @@
  *    silently contribute nothing to the compiled output. So they're unregistered on load, before the user
  *    ever opens the Add Node menu.
  *
- * 2. BROWSE: builds the left sidebar's searchable, categorized node list straight from whatever's left in
+ * 2. COLORIZE: stamps a category color onto every remaining registered type, once, right after trim.
+ *    litegraph resolves a node's render color as `node.color || node.constructor.color || default` (see
+ *    lib/litegraph.js's drawNode) -- so setting .color/.bgcolor on the TYPE's constructor function here
+ *    colors every instance of it without touching any individual node*.js file, and a node that sets its
+ *    own instance this.color (On Key Press's distinct green) still wins, since instance own-properties
+ *    are checked first in that fallback chain. The 36 raw categories collectCategories() below produces
+ *    are grouped into 16 GROUP_COLORS -- coloring all 36 distinctly would be more visual noise than signal
+ *    at node-title-bar size. Native tier used to set its own brown this.color/bgcolor per-constructor;
+ *    that's centralized here too now, so its 8 sub-categories (object/vehicle/human/player/marker/camera/
+ *    hud/sound) each get their own shade instead of one shared brown.
+ *
+ * 3. BROWSE: builds the left sidebar's searchable, categorized node list straight from whatever's left in
  *    LiteGraph.registered_node_types -- reading each node's own .title/.desc statics (the same metadata
  *    every nodes*.js file already declares) rather than a hand-maintained list here that would drift the
  *    moment a new node file is added. Category is the type string's own second path segment ("ess/world/
@@ -28,7 +39,7 @@
     if (!keep) LiteGraph.unregisterNodeType(type);
   });
 
-  // ---- 2. browse ---------------------------------------------------------------------------------------
+  // ---- 2. colorize -------------------------------------------------------------------------------------
   var CATEGORY_LABELS = { aiorders: "AI Orders", ui: "UI", mark: "Markers" };
   function categoryLabel(tier, seg) {
     if (tier === "flow") return "Flow Control";
@@ -36,6 +47,56 @@
     return tier === "native" ? "Native: " + base : base;
   }
 
+  // [titleBarColor, bodyColor] per super-group -- cool tones for Ess, warm for Native (Object keeps its
+  // original brown), a teal accent for Flow Control that belongs to neither tier.
+  var GROUP_COLORS = {
+    worldSpawn:    ["#2d5a3d", "#16291e"],
+    playerHuman:   ["#2d4a6b", "#16232f"],
+    vehicle:       ["#1f5c66", "#0f2b30"],
+    encounterAI:   ["#6b2d2d", "#2f1414"],
+    missions:      ["#6b5a1f", "#2f270e"],
+    presentation:  ["#4a2d6b", "#211430"],
+    utility:       ["#1f6b5a", "#0e2f27"],
+    nativeObject:  ["#5a3a1a", "#2b1c0d"],
+    nativeVehicle: ["#6b4423", "#331f0f"],
+    nativeHuman:   ["#6b3423", "#331810"],
+    nativePlayer:  ["#6b5623", "#332810"],
+    nativeMarker:  ["#6b2d23", "#331610"],
+    nativeCamera:  ["#5a5a23", "#2b2b10"],
+    nativeHud:     ["#5a2d3a", "#2b151b"],
+    nativeSound:   ["#6b3a13", "#331b09"],
+    flow:          ["#1a5a6b", "#0c2a32"]
+  };
+  // Maps every categoryLabel() output to one of the groups above. A label with no entry here (e.g. a
+  // brand-new node file introducing an uncategorized segment) is left with litegraph's plain default
+  // color rather than erroring -- see the `if (!group) return;` guard in colorize() below.
+  var CATEGORY_GROUP = {
+    "World": "worldSpawn", "Spawn": "worldSpawn", "Object": "worldSpawn", "General": "worldSpawn",
+    "Player": "playerHuman", "Human": "playerHuman", "Debug": "playerHuman", "Fun": "playerHuman",
+    "Vehicle": "vehicle",
+    "AI Orders": "encounterAI", "Relations": "encounterAI", "Support": "encounterAI",
+    "Objective": "missions", "Quest": "missions", "Contract": "missions", "Sandbox": "missions", "Cinematic": "missions",
+    "Camera": "presentation", "Markers": "presentation", "Hud": "presentation", "Sound": "presentation", "UI": "presentation",
+    "Console": "utility", "Impulse": "utility", "Time": "utility", "Triggers": "utility", "Loop": "utility",
+    "Native: Object": "nativeObject", "Native: Vehicle": "nativeVehicle", "Native: Human": "nativeHuman",
+    "Native: Player": "nativePlayer", "Native: Marker": "nativeMarker", "Native: Camera": "nativeCamera",
+    "Native: Hud": "nativeHud", "Native: Sound": "nativeSound",
+    "Flow Control": "flow"
+  };
+  function colorize() {
+    Object.keys(LiteGraph.registered_node_types).forEach(function (type) {
+      var cls = LiteGraph.registered_node_types[type];
+      var parts = type.split("/");
+      var label = categoryLabel(parts[0], parts.length > 2 ? parts[1] : null);
+      var group = GROUP_COLORS[CATEGORY_GROUP[label]];
+      if (!group) return;
+      cls.color = group[0];
+      cls.bgcolor = group[1];
+    });
+  }
+  colorize();
+
+  // ---- 3. browse ---------------------------------------------------------------------------------------
   function collectCategories() {
     var byCat = {};
     Object.keys(LiteGraph.registered_node_types).sort().forEach(function (type) {

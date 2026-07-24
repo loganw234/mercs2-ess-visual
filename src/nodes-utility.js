@@ -239,15 +239,18 @@
     this.addWidget("number", "r", this.properties.r, function (v) { this.properties.r = v; }.bind(this));
     this.addProperty("fn", "function() Ess.Easy.Toast('Triggered!') end");
     this.addWidget("text", "fn", this.properties.fn, function (v) { this.properties.fn = v; }.bind(this));
+    this.addOutput("cancel", "string");
   }
   TriggerOnPlayerNear.title = "Trigger: On Player Near";
-  TriggerOnPlayerNear.desc = "Ess.Easy.Triggers.onPlayerNear(x, y, z, r, fn) -- fn is raw Lua function-literal text, see file header";
+  TriggerOnPlayerNear.desc = "Ess.Easy.Triggers.onPlayerNear(x, y, z, r, fn) -- fn is raw Lua function-literal text, see file header -> cancel";
   TriggerOnPlayerNear.prototype.onAction = function () {
     var x = CodeGen.resolveNumberInput(this, 1, "x");    // input 0 is "exec"
     var y = CodeGen.resolveNumberInput(this, 2, "y");
     var z = CodeGen.resolveNumberInput(this, 3, "z");
     var r = CodeGen.resolveNumberInput(this, 4, "r");
-    CodeGen.emit("Ess.Easy.Triggers.onPlayerNear(" + x + ", " + y + ", " + z + ", " + r + ", " + this.properties.fn + ")");
+    var varName = CodeGen.newLocal("trigger");
+    CodeGen.emitCapture(varName, "Ess.Easy.Triggers.onPlayerNear(" + x + ", " + y + ", " + z + ", " + r + ", " + this.properties.fn + ")");
+    this.setOutputData(1, varName);   // "cancel" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/triggers/onplayernear", TriggerOnPlayerNear);
@@ -263,12 +266,15 @@
     this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
     this.addProperty("fn", "function() Ess.Easy.Toast('Triggered!') end");
     this.addWidget("text", "fn", this.properties.fn, function (v) { this.properties.fn = v; }.bind(this));
+    this.addOutput("cancel", "string");
   }
   TriggerOnDeath.title = "Trigger: On Death";
-  TriggerOnDeath.desc = "Ess.Easy.Triggers.onDeath(uGuid, fn) -- fn is raw Lua function-literal text, see file header";
+  TriggerOnDeath.desc = "Ess.Easy.Triggers.onDeath(uGuid, fn) -- fn is raw Lua function-literal text, see file header -> cancel";
   TriggerOnDeath.prototype.onAction = function () {
     var uGuid = resolveRawInput(this, 1, "uGuid");    // input 0 is "exec"
-    CodeGen.emit("Ess.Easy.Triggers.onDeath(" + uGuid + ", " + this.properties.fn + ")");
+    var varName = CodeGen.newLocal("trigger");
+    CodeGen.emitCapture(varName, "Ess.Easy.Triggers.onDeath(" + uGuid + ", " + this.properties.fn + ")");
+    this.setOutputData(1, varName);   // "cancel" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/triggers/ondeath", TriggerOnDeath);
@@ -284,12 +290,15 @@
     this.addWidget("number", "seconds", this.properties.seconds, function (v) { this.properties.seconds = v; }.bind(this));
     this.addProperty("fn", "function() Ess.Easy.Toast('Triggered!') end");
     this.addWidget("text", "fn", this.properties.fn, function (v) { this.properties.fn = v; }.bind(this));
+    this.addOutput("cancel", "string");
   }
   TriggerAfter.title = "Trigger: After Delay";
-  TriggerAfter.desc = "Ess.Easy.Triggers.after(seconds, fn) -- fn is raw Lua function-literal text, see file header";
+  TriggerAfter.desc = "Ess.Easy.Triggers.after(seconds, fn) -- fn is raw Lua function-literal text, see file header -> cancel";
   TriggerAfter.prototype.onAction = function () {
     var seconds = CodeGen.resolveNumberInput(this, 1, "seconds");    // input 0 is "exec"
-    CodeGen.emit("Ess.Easy.Triggers.after(" + seconds + ", " + this.properties.fn + ")");
+    var varName = CodeGen.newLocal("trigger");
+    CodeGen.emitCapture(varName, "Ess.Easy.Triggers.after(" + seconds + ", " + this.properties.fn + ")");
+    this.setOutputData(1, varName);   // "cancel" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/triggers/after", TriggerAfter);

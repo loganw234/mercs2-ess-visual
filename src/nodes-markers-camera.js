@@ -34,16 +34,19 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
+    this.addOutput("handle", "string");
   }
   MarkEnemy.title = "Mark Enemy";
-  MarkEnemy.desc = "Ess.Easy.Mark.enemy(guid) -- radar+PDA, no world icon";
+  MarkEnemy.desc = "Ess.Easy.Mark.enemy(guid) -- radar+PDA, no world icon -> handle";
   MarkEnemy.prototype.onAction = function () {
     // "guid" is a Lua EXPRESSION, not a quoted string (see file header) -- the default
     // "Ess.Player.character(0)" is just a placeholder to keep the generated call valid out of the box; a
     // real use case would wire in an actual enemy's guid instead (e.g. from wherever this graph ends up
     // tracking spawned/targeted objects).
     var guid = resolveRawInput(this, 1, "guid");  // input 0 is "exec"
-    CodeGen.emit("Ess.Easy.Mark.enemy(" + guid + ")");
+    var varName = CodeGen.newLocal("mark");
+    CodeGen.emitCapture(varName, "Ess.Easy.Mark.enemy(" + guid + ")");
+    this.setOutputData(1, varName);   // "handle" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/mark/enemy", MarkEnemy);
@@ -57,14 +60,17 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
+    this.addOutput("handle", "string");
   }
   MarkObjective.title = "Mark Objective";
-  MarkObjective.desc = "Ess.Easy.Mark.objective(guid) -- radar+PDA+world icon";
+  MarkObjective.desc = "Ess.Easy.Mark.objective(guid) -- radar+PDA+world icon -> handle";
   MarkObjective.prototype.onAction = function () {
     // Same expression-not-string-literal convention as MarkEnemy above -- placeholder default guid, a real
     // use case would wire in an actual objective's guid.
     var guid = resolveRawInput(this, 1, "guid");  // input 0 is "exec"
-    CodeGen.emit("Ess.Easy.Mark.objective(" + guid + ")");
+    var varName = CodeGen.newLocal("mark");
+    CodeGen.emitCapture(varName, "Ess.Easy.Mark.objective(" + guid + ")");
+    this.setOutputData(1, varName);   // "handle" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/mark/objective", MarkObjective);
@@ -87,15 +93,18 @@
     this.addInput("r", "number");
     this.addProperty("r", 5);
     this.addWidget("number", "r", this.properties.r, function (v) { this.properties.r = v; }.bind(this));
+    this.addOutput("handle", "string");
   }
   MarkZone.title = "Mark Zone";
-  MarkZone.desc = "Ess.Easy.Mark.zone(x, y, z, r) -- world ring only, ground-disc 'go here' marker";
+  MarkZone.desc = "Ess.Easy.Mark.zone(x, y, z, r) -- world ring only, ground-disc 'go here' marker -> handle";
   MarkZone.prototype.onAction = function () {
     var x = CodeGen.resolveNumberInput(this, 1, "x");  // input 0 is "exec"
     var y = CodeGen.resolveNumberInput(this, 2, "y");
     var z = CodeGen.resolveNumberInput(this, 3, "z");
     var r = CodeGen.resolveNumberInput(this, 4, "r");
-    CodeGen.emit("Ess.Easy.Mark.zone(" + x + ", " + y + ", " + z + ", " + r + ")");
+    var varName = CodeGen.newLocal("mark");
+    CodeGen.emitCapture(varName, "Ess.Easy.Mark.zone(" + x + ", " + y + ", " + z + ", " + r + ")");
+    this.setOutputData(1, varName);   // "handle" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/mark/zone", MarkZone);
@@ -115,12 +124,15 @@
     this.addInput("guid", "string");
     this.addProperty("guid", "Ess.Player.character(0)");
     this.addWidget("text", "guid", this.properties.guid, function (v) { this.properties.guid = v; }.bind(this));
+    this.addOutput("stop", "string");
   }
   CameraWatch.title = "Camera Watch";
-  CameraWatch.desc = "Ess.Easy.Camera.watch(guid) -- default locked-off tracking shot (opts table omitted)";
+  CameraWatch.desc = "Ess.Easy.Camera.watch(guid) -- default locked-off tracking shot (opts table omitted) -> stop";
   CameraWatch.prototype.onAction = function () {
     var guid = resolveRawInput(this, 1, "guid");  // input 0 is "exec"
-    CodeGen.emit("Ess.Easy.Camera.watch(" + guid + ")");
+    var varName = CodeGen.newLocal("watch");
+    CodeGen.emitCapture(varName, "Ess.Easy.Camera.watch(" + guid + ")");
+    this.setOutputData(1, varName);   // "stop" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/camera/watch", CameraWatch);
@@ -145,14 +157,17 @@
     this.addInput("speed", "number");
     this.addProperty("speed", 40);
     this.addWidget("number", "speed", this.properties.speed, function (v) { this.properties.speed = v; }.bind(this));
+    this.addOutput("stop", "string");
   }
   CameraOrbit.title = "Camera Orbit";
-  CameraOrbit.desc = "Ess.Easy.Camera.orbit(guid, { radius = r, speed = s })";
+  CameraOrbit.desc = "Ess.Easy.Camera.orbit(guid, { radius = r, speed = s }) -> stop";
   CameraOrbit.prototype.onAction = function () {
     var guid = resolveRawInput(this, 1, "guid");  // input 0 is "exec"
     var radius = CodeGen.resolveNumberInput(this, 2, "radius");
     var speed = CodeGen.resolveNumberInput(this, 3, "speed");
-    CodeGen.emit("Ess.Easy.Camera.orbit(" + guid + ", { radius = " + radius + ", speed = " + speed + " })");
+    var varName = CodeGen.newLocal("orbit");
+    CodeGen.emitCapture(varName, "Ess.Easy.Camera.orbit(" + guid + ", { radius = " + radius + ", speed = " + speed + " })");
+    this.setOutputData(1, varName);   // "stop" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/camera/orbit", CameraOrbit);

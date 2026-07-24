@@ -30,6 +30,9 @@
 
   // ============================================================
   // Ess/Cinematic/Play -- Ess.Easy.Cinematic.play(steps, onDone)
+  // "seq" output captures the returned sequence handle via CodeGen.newLocal/emitCapture (see codegen.js's
+  // header and nodes.js's Spawn Ahead, which gets the same treatment) -- usable downstream with
+  // Ess.Easy.Cinematic.stop/isPlaying.
   // ============================================================
   function CinematicPlay() {
     this.addInput("exec", LiteGraph.ACTION);
@@ -37,11 +40,14 @@
     this.addProperty("steps", DEFAULT_STEPS);
     this.addWidget("text", "steps", this.properties.steps, function (v) { this.properties.steps = v; }.bind(this));
     this.size = [260, 100];
+    this.addOutput("seq", "string");
   }
   CinematicPlay.title = "Cinematic: Play";
-  CinematicPlay.desc = "Ess.Easy.Cinematic.play(steps) -- onDone omitted, see file header";
+  CinematicPlay.desc = "Ess.Easy.Cinematic.play(steps) -- onDone omitted, see file header -> seq";
   CinematicPlay.prototype.onAction = function () {
-    CodeGen.emit("Ess.Easy.Cinematic.play(" + this.properties.steps + ")");
+    var varName = CodeGen.newLocal("seq");
+    CodeGen.emitCapture(varName, "Ess.Easy.Cinematic.play(" + this.properties.steps + ")");
+    this.setOutputData(1, varName);   // "seq" is output slot 1 -- "then" (EVENT) took slot 0
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/cinematic/play", CinematicPlay);
