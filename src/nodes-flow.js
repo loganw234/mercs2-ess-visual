@@ -231,4 +231,41 @@
   arithmeticNode("flow/subtract", "Subtract", "-");
   arithmeticNode("flow/multiply", "Multiply", "*");
   arithmeticNode("flow/divide", "Divide", "/");
+
+  // ============================================================
+  // Flow/CombineCoordinates -- {x=x, y=y, z=z}, combining three separate numbers into the position-table
+  // shape several Ess calls expect as ONE argument (AI Orders: Guard's `at`, and others like it). An ACTION
+  // node, not pure data, despite doing no real work of its own -- see codegen.js's "ORDERING CAVEAT" note:
+  // a captured value (e.g. Player: Get Position's x/y/z) is only safe to read from ANOTHER ACTION node
+  // further down the SAME exec chain, never from a pure-data node's onExecute (that runs once in
+  // compiler.js's flat pre-pass, before any trigger fires, i.e. before the capturing node's own onAction
+  // has run). Wiring exec straight through (in == out, same tick) makes this the first thing downstream
+  // of Player: Get Position that's actually safe to feed captured x/y/z into. Only solves the SINGLE-point
+  // case; something like AI Orders: Patrol's `points` needs a LIST of these, which still needs to be typed
+  // as a table of table-literals -- wiring N separate combiners into one list has no dedicated node yet.
+  // ============================================================
+  function CombineCoordinates() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("x", "number");
+    this.addProperty("x", 0);
+    this.addWidget("number", "x", this.properties.x, function (v) { this.properties.x = v; }.bind(this));
+    this.addInput("y", "number");
+    this.addProperty("y", 0);
+    this.addWidget("number", "y", this.properties.y, function (v) { this.properties.y = v; }.bind(this));
+    this.addInput("z", "number");
+    this.addProperty("z", 0);
+    this.addWidget("number", "z", this.properties.z, function (v) { this.properties.z = v; }.bind(this));
+    this.addOutput("pos", "string");
+  }
+  CombineCoordinates.title = "Combine Coordinates";
+  CombineCoordinates.desc = "{x=x, y=y, z=z} -- combines three numbers into the position-table shape AI Orders: Guard's `at` (and similar) expect. Wire this in the exec chain right after whatever captures x/y/z (e.g. Player: Get Position) -- see node comment for why.";
+  CombineCoordinates.prototype.onAction = function () {
+    var x = CodeGen.resolveNumberInput(this, 1, "x");
+    var y = CodeGen.resolveNumberInput(this, 2, "y");
+    var z = CodeGen.resolveNumberInput(this, 3, "z");
+    this.setOutputData(1, "{x=" + x + ", y=" + y + ", z=" + z + "}");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("flow/combinecoords", CombineCoordinates);
 })();

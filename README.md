@@ -158,16 +158,23 @@ consumer would read stale data.)
 `"ess/*"` and `"native/*"`; its own sidebar category): `Compare` (`==`/`~=`/`</<=`/`>`/`>=`, operator picked
 from a combo), `And`/`Or`/`Not`, `Add`/`Subtract`/`Multiply`/`Divide`, `Set Local`, `Log`
 (`Ess.Log(tostring(msg))`, for checking a captured value or confirming a branch took the path you expected),
-and `Custom Code` — the escape hatch: one multiline text widget (click it to open a real textarea, not a
-single-line prompt), spliced verbatim into the compiled script via a single `CodeGen.emit()` call, for
-anything without a dedicated node yet. It can reference any `__prefixN` local captured earlier in the same
-exec chain, but has no way to surface what's actually in scope, so getting a variable name right is on you.
+`Combine Coordinates`, and `Custom Code` — the escape hatch: one multiline text widget (click it to open a
+real textarea, not a single-line prompt), spliced verbatim into the compiled script via a single
+`CodeGen.emit()` call, for anything without a dedicated node yet. It can reference any `__prefixN` local
+captured earlier in the same exec chain, but has no way to surface what's actually in scope, so getting a
+variable name right is on you.
 All the comparison/boolean/arithmetic nodes are pure-data, same "emit an expression, never a computed
 value" model as Random Number — chaining one into another (e.g. two `Compare`s into one `And`) works
 whenever the upstream node happens to execute first in the pre-pass, but isn't guaranteed by construction
 (see "What's deliberately not here yet" below) — keep chains shallow until that gets a real topological
-sort. (Also `flow/*`, but substantial enough for their own section: **Function Start**, **Function
-Return**, and dynamically-generated **Call** nodes — see "Function blocks" below.)
+sort. `Combine Coordinates` (`{x=.., y=.., z=..}`, for feeding a single position argument like AI Orders:
+Guard's `at`) is the one exception to "arithmetic/combiner nodes here are pure-data" — it's a real ACTION
+node (exec in, exec out), specifically so it can safely sit right after a capturing node like `Player: Get
+Position` in the SAME exec chain and read its x/y/z the moment they're set, instead of racing the pre-pass
+(see `codegen.js`'s "ORDERING CAVEAT" note — a pure-data consumer of a captured value reads stale/undefined
+data, since pre-pass nodes all run before any action node's own onAction). (Also `flow/*`, but substantial
+enough for their own section: **Function Start**, **Function Return**, and dynamically-generated **Call**
+nodes — see "Function blocks" below.)
 
 ## Function blocks
 
@@ -367,7 +374,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 376 static node types** (169 Ess + 193 Native + 14 Flow Control), plus one dynamically-
+**Grand total: 377 static node types** (169 Ess + 193 Native + 15 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet

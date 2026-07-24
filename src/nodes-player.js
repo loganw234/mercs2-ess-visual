@@ -46,17 +46,23 @@
   // ============================================================
   // Ess/Player/GetPosition -- local x, y, z, yaw = Ess.Player.pose(i), captured once and exposed as four
   // separate outputs (see file header for why this is an ACTION node, not pure-data, unlike every other
-  // Player getter in this file).
+  // Player getter in this file). Typed "number", NOT this repo's usual "string" for a captured value
+  // (SpawnAhead's guid, Marker handles, ...) -- those are opaque references, spliced as identifiers
+  // wherever something needs a guid/handle; a position component is a genuine number a mod script does
+  // arithmetic on (offsetting a spawn point, feeding Number: Add), and "number"-typed is what every
+  // arithmetic input and every literal-coordinate input (Object: Spawn's x/y/z, Mark: Zone's x/y/z, ...)
+  // already expects -- see Random Number in nodes.js for the same "number" typing on a captured-at-
+  // compile-time expression, not a hardcoded value.
   // ============================================================
   function PlayerGetPosition() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("playerIndex", 0);
     this.addWidget("number", "playerIndex", this.properties.playerIndex, function (v) { this.properties.playerIndex = v; }.bind(this));
-    this.addOutput("x", "string");
-    this.addOutput("y", "string");
-    this.addOutput("z", "string");
-    this.addOutput("yaw", "string");
+    this.addOutput("x", "number");
+    this.addOutput("y", "number");
+    this.addOutput("z", "number");
+    this.addOutput("yaw", "number");
   }
   PlayerGetPosition.title = "Player: Get Position";
   PlayerGetPosition.desc = "local x, y, z, yaw = Ess.Player.pose(i) -- captured once, all four exposed separately -> x, y, z, yaw";
