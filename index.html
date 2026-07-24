@@ -10,6 +10,21 @@
 </head>
 <body>
 <div class="app">
+  <div class="library">
+    <header>
+      <h1>Node Library</h1>
+      <input type="text" id="paletteSearch" placeholder="Filter nodes...">
+      <p class="count" id="paletteCount"></p>
+    </header>
+    <div class="legend">
+      <div><span class="swatch exec"></span> exec chain -- fires in order</div>
+      <div><span class="swatch num"></span> number data</div>
+      <div><span class="swatch str"></span> string / other data</div>
+      <p>Right-click empty canvas for the same list. Drag from a node's dot to wire it. Del removes the
+        selected node. Click a node below to drop it onto the canvas.</p>
+    </div>
+    <div id="palette"></div>
+  </div>
   <div class="canvaswrap">
     <canvas id="graphcanvas"></canvas>
   </div>
@@ -17,7 +32,7 @@
     <header>
       <h1>Ess Visual</h1>
       <p>A draft node-graph editor for Ess mods -- built on litegraph.js (the same engine ComfyUI's
-        canvas runs on). Drag from a node's dot to wire it up; right-click empty canvas to add a node.</p>
+        canvas runs on).</p>
     </header>
     <div class="actions">
       <button id="btnCompile">Compile</button>
@@ -36,6 +51,7 @@
 <script src="src/nodes-markers-camera.js"></script>
 <script src="src/nodes-encounter.js"></script>
 <script src="src/nodes-missions.js"></script>
+<script src="src/palette.js"></script>
 <script src="src/compiler.js"></script>
 <script src="src/app.js"></script>
 </body>

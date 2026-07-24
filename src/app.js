@@ -50,6 +50,7 @@
   buildExampleGraph();
   resize();
   graph.start(); // litegraph's own render/interaction loop -- NOT what runs our compile step (see compiler.js)
+  Palette.render(graph, canvas); // left sidebar node browser -- see palette.js (also trims litegraph's stock nodes)
 
   // ---- compile + preview + download ----
   var codeEl = document.getElementById("code");
