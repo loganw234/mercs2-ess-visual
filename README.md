@@ -73,22 +73,33 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-seven namespace-grouped files added across two later passes, **77 nodes total** covering the great
-majority of Ess's **Easy tier** — every `Ess.Easy.*` function has a node now, with two narrow, documented
-exceptions (below):
+ten namespace-grouped files added across three later passes, **164 nodes total** — every `Ess.Easy.*`
+function has a node (two narrow, documented exceptions below), plus a wide slice of the **Core** tier
+(the direct `Ess.*` namespaces, not just their `Easy` wrappers) for the namespaces modders touch most:
 
 | File | Covers |
 |---|---|
 | `src/nodes-world.js` | `Easy.Vehicle`, `Easy.Spawn`, `Easy.World`, `Easy.Fun` |
-| `src/nodes-player.js` | `Easy.Player`, `Easy.Human`, `Easy.Debug` (+ `Player.character`/`Debug.isOn` data nodes) |
-| `src/nodes-markers-camera.js` | `Easy.Mark`, `Easy.Camera`, `Easy.Sound`, `Easy.Confirm` |
-| `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike` |
+| `src/nodes-player.js` | `Easy.Player`, `Easy.Human`, `Easy.Debug`, plus Core `Player.camera`/`.targetUnderReticle`/`.inVehicle`/`.onFoot`/`.giveFuel`/`.removeBoundaries`/`.setInputEnabled`/`.rumble`/`.teleport` |
+| `src/nodes-markers-camera.js` | `Easy.Mark`, `Easy.Camera`, `Easy.Sound`, `Easy.Confirm`, plus Core `Camera.fov`/`.restoreFov`/`.panicRevert` |
+| `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike`, plus Core `Relations.setFeeling`/`.getFeeling`/`.set-`/`.getPerceivability` |
 | `src/nodes-missions.js` | `Easy.Objective`, `Easy.Quest`, `Easy.Contract`, `Easy.Sandbox` |
 | `src/nodes-cinematic.js` | `Easy.Cinematic.play` (declarative cutscene timelines) |
-| `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers` |
+| `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers`, plus Core `Loop.start`/`.stop` |
+| `src/nodes-object.js` | Core `Ess.Object.*` (34 nodes — health/life, transform, physics, visibility/labels, spawn) |
+| `src/nodes-human-vehicle.js` | Core `Ess.Human.*` (14) and `Ess.Vehicle.*` (11) |
+| `src/nodes-hud-sound.js` | Core `Ess.Hud.*` and `Ess.Sound.*` |
 
-**Still Easy-tier only** — none of Core or Raw tier is represented (by design; Easy is the one-liner tier
-this node model fits best).
+**Raw tier still isn't represented** (by design — Raw is the bare-native, no-safety-rail tier; every node
+here goes through at least Ess's Core `pcall`-guarded wrapper). Within Core tier, coverage favors the
+namespaces a mod script actually reaches for (Object/Human/Vehicle/Player/Camera/Relations/Hud/Sound/Loop)
+over generic infrastructure (`Ess.Table.*`, `Ess.Safe.*`, `Ess.Override.*`, `Ess.Save*`, the raw `Ess.UI.*`
+builder API — none of these are "mod actions," they're plumbing for other Lua code, so they stay out) and
+skips any getter whose real return is genuinely multi-value with no single primary one (documented with a
+one-line skip comment at each call site — e.g. `Object.pos`/`.velocity`/`.size`, `Player.pose`/`.viewYaw`,
+`Vehicle.followGhost`, `Human.allWeapons`) — this node model is one Lua value per output slot; see
+`nodes-player.js`'s header for the `targetUnderReticle`-style exception (a multi-return function whose own
+doc comment already establishes a primary first value survives fine).
 
 **Callback parameters** (`Confirm`'s `onYes`/`onNo`, `Triggers.*`'s `fn`, `Menu`'s `entries` actions, every
 `onDone`/`onFail`/`onComplete` across `Objective`/`Quest`) are modeled as raw Lua-source **text** properties

@@ -7,7 +7,15 @@
  *   src/93_easy_unlocks.lua  -- Ess.Easy.Player.*
  *   src/14_human.lua         -- Ess.Easy.Human.giveWeapon
  *   src/97_easy_debug.lua    -- Ess.Easy.Debug.*
- *   src/10_player.lua        -- Ess.Player.character
+ *   src/10_player.lua        -- Ess.Player.* (Core tier, added in a later pass)
+ *
+ * Ess.Player.pose/slot/viewYaw are NOT covered here -- pose/viewYaw return more than one meaningfully
+ * distinct value (x,y,z,yaw,char,slot / angle,bool) with no single obviously-primary one, which doesn't
+ * fit this repo's one-output-per-data-node model; slot() returns an opaque native player handle with no
+ * standalone value to a mod script. targetUnderReticle DOES return multiple values (g,x,y,z) but follows
+ * the SAME "own convention puts the guid first" the real function's doc comment already establishes, so
+ * it's modeled here the same way Player Character is: emit the call expression, let Lua's normal
+ * single-value-context truncation take just the guid wherever this output gets spliced in.
  */
 (function () {
   "use strict";
@@ -216,4 +224,181 @@
     this.setOutputData(0, "Ess.Easy.Debug.isOn()");
   };
   LiteGraph.registerNodeType("ess/debug/ison", DebugIsOn);
+
+  // ============================================================
+  // Ess/Player/Camera -- a PURE DATA node wrapping Ess.Player.camera(i) -> camera guid | nil.
+  // ============================================================
+  function PlayerCamera() {
+    this.addOutput("cam", "string");
+    this.addProperty("playerIndex", 0);
+    this.addWidget("number", "playerIndex", this.properties.playerIndex, function (v) { this.properties.playerIndex = v; }.bind(this));
+  }
+  PlayerCamera.title = "Player Camera";
+  PlayerCamera.desc = "Ess.Player.camera(i) -- emits Lua source, not a resolved guid";
+  PlayerCamera.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Player.camera(" + this.properties.playerIndex + ")");
+  };
+  LiteGraph.registerNodeType("ess/player/camera", PlayerCamera);
+
+  // ============================================================
+  // Ess/Player/TargetUnderReticle -- a PURE DATA node wrapping Ess.Player.targetUnderReticle(i). Real
+  // return is (g, x, y, z); this emits the bare call expression, so wherever this output gets spliced (a
+  // single-value guid slot) Lua's own single-value-context truncation takes just g -- see file header.
+  // ============================================================
+  function PlayerTargetUnderReticle() {
+    this.addOutput("guid", "string");
+    this.addProperty("playerIndex", 0);
+    this.addWidget("number", "playerIndex", this.properties.playerIndex, function (v) { this.properties.playerIndex = v; }.bind(this));
+  }
+  PlayerTargetUnderReticle.title = "Player: Target Under Reticle";
+  PlayerTargetUnderReticle.desc = "Ess.Player.targetUnderReticle(i) -- emits Lua source; real return is (g,x,y,z), only g survives a single-value splice";
+  PlayerTargetUnderReticle.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Player.targetUnderReticle(" + this.properties.playerIndex + ")");
+  };
+  LiteGraph.registerNodeType("ess/player/targetunderreticle", PlayerTargetUnderReticle);
+
+  // ============================================================
+  // Ess/Player/InVehicle -- a PURE DATA node wrapping Ess.Player.inVehicle(i) -> vehicle guid | nil.
+  // ============================================================
+  function PlayerInVehicle() {
+    this.addOutput("veh", "string");
+    this.addProperty("playerIndex", 0);
+    this.addWidget("number", "playerIndex", this.properties.playerIndex, function (v) { this.properties.playerIndex = v; }.bind(this));
+  }
+  PlayerInVehicle.title = "Player In Vehicle";
+  PlayerInVehicle.desc = "Ess.Player.inVehicle(i) -- emits Lua source, not a resolved guid";
+  PlayerInVehicle.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Player.inVehicle(" + this.properties.playerIndex + ")");
+  };
+  LiteGraph.registerNodeType("ess/player/invehicle", PlayerInVehicle);
+
+  // ============================================================
+  // Ess/Player/OnFoot -- a PURE DATA node wrapping Ess.Player.onFoot(i) -> bool.
+  // ============================================================
+  function PlayerOnFoot() {
+    this.addOutput("onFoot", "boolean");
+    this.addProperty("playerIndex", 0);
+    this.addWidget("number", "playerIndex", this.properties.playerIndex, function (v) { this.properties.playerIndex = v; }.bind(this));
+  }
+  PlayerOnFoot.title = "Player On Foot";
+  PlayerOnFoot.desc = "Ess.Player.onFoot(i) -- emits Lua source, not a resolved boolean";
+  PlayerOnFoot.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Player.onFoot(" + this.properties.playerIndex + ")");
+  };
+  LiteGraph.registerNodeType("ess/player/onfoot", PlayerOnFoot);
+
+  // ============================================================
+  // Ess/Player/GiveFuel -- Ess.Player.giveFuel(n)
+  // ============================================================
+  function PlayerGiveFuel() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("n", "number");
+    this.addProperty("n", 100);
+    this.addWidget("number", "n", this.properties.n, function (v) { this.properties.n = v; }.bind(this));
+  }
+  PlayerGiveFuel.title = "Give Fuel";
+  PlayerGiveFuel.desc = "Ess.Player.giveFuel(n)";
+  PlayerGiveFuel.prototype.onAction = function () {
+    var n = CodeGen.resolveNumberInput(this, 1, "n");  // input 0 is "exec"
+    CodeGen.emit("Ess.Player.giveFuel(" + n + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/player/givefuel", PlayerGiveFuel);
+
+  // ============================================================
+  // Ess/Player/RemoveBoundaries -- Ess.Player.removeBoundaries(). No args -- lifts every active
+  // out-of-bounds volume for every connected player at once.
+  // ============================================================
+  function PlayerRemoveBoundaries() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+  }
+  PlayerRemoveBoundaries.title = "Remove Boundaries";
+  PlayerRemoveBoundaries.desc = "Ess.Player.removeBoundaries()";
+  PlayerRemoveBoundaries.prototype.onAction = function () {
+    CodeGen.emit("Ess.Player.removeBoundaries()");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/player/removeboundaries", PlayerRemoveBoundaries);
+
+  // ============================================================
+  // Ess/Player/SetInputEnabled -- Ess.Player.setInputEnabled(bOn, i). Gates GAME control only -- a UI
+  // reading keyboard events (e.g. a chat box) keeps working while this is off.
+  // ============================================================
+  function PlayerSetInputEnabled() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("on", true);
+    this.addWidget("toggle", "on", this.properties.on, function (v) { this.properties.on = v; }.bind(this));
+    this.addInput("i", "number");
+    this.addProperty("i", 0);
+    this.addWidget("number", "i", this.properties.i, function (v) { this.properties.i = v; }.bind(this));
+  }
+  PlayerSetInputEnabled.title = "Set Input Enabled";
+  PlayerSetInputEnabled.desc = "Ess.Player.setInputEnabled(bOn, i)";
+  PlayerSetInputEnabled.prototype.onAction = function () {
+    var i = CodeGen.resolveNumberInput(this, 1, "i");  // input 0 is "exec"
+    CodeGen.emit("Ess.Player.setInputEnabled(" + (this.properties.on ? "true" : "false") + ", " + i + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/player/setinputenabled", PlayerSetInputEnabled);
+
+  // ============================================================
+  // Ess/Player/Rumble -- Ess.Player.rumble(i, fLength) -- controller haptic feedback.
+  // ============================================================
+  function PlayerRumble() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("i", "number");
+    this.addProperty("i", 0);
+    this.addWidget("number", "i", this.properties.i, function (v) { this.properties.i = v; }.bind(this));
+    this.addInput("fLength", "number");
+    this.addProperty("fLength", 0.2);
+    this.addWidget("number", "fLength", this.properties.fLength, function (v) { this.properties.fLength = v; }.bind(this));
+  }
+  PlayerRumble.title = "Rumble";
+  PlayerRumble.desc = "Ess.Player.rumble(i, fLength)";
+  PlayerRumble.prototype.onAction = function () {
+    var i = CodeGen.resolveNumberInput(this, 1, "i");  // input 0 is "exec"
+    var fLength = CodeGen.resolveNumberInput(this, 2, "fLength");
+    CodeGen.emit("Ess.Player.rumble(" + i + ", " + fLength + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/player/rumble", PlayerRumble);
+
+  // ============================================================
+  // Ess/Player/Teleport -- Ess.Player.teleport(x, y, z, yaw, onDone). onDone is a completion callback,
+  // modeled as raw Lua-source text same as every other callback param in this repo (see nodes-utility.js's
+  // file header for why) -- default "nil" (the real function's own nil-safe fallback).
+  // ============================================================
+  function PlayerTeleport() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("x", "number");
+    this.addProperty("x", 0);
+    this.addWidget("number", "x", this.properties.x, function (v) { this.properties.x = v; }.bind(this));
+    this.addInput("y", "number");
+    this.addProperty("y", 0);
+    this.addWidget("number", "y", this.properties.y, function (v) { this.properties.y = v; }.bind(this));
+    this.addInput("z", "number");
+    this.addProperty("z", 0);
+    this.addWidget("number", "z", this.properties.z, function (v) { this.properties.z = v; }.bind(this));
+    this.addInput("yaw", "number");
+    this.addProperty("yaw", 0);
+    this.addWidget("number", "yaw", this.properties.yaw, function (v) { this.properties.yaw = v; }.bind(this));
+    this.addProperty("onDone", "nil");
+    this.addWidget("text", "onDone (nil = none)", this.properties.onDone, function (v) { this.properties.onDone = v; }.bind(this));
+  }
+  PlayerTeleport.title = "Teleport";
+  PlayerTeleport.desc = "Ess.Player.teleport(x, y, z, yaw, onDone)";
+  PlayerTeleport.prototype.onAction = function () {
+    var x = CodeGen.resolveNumberInput(this, 1, "x");  // input 0 is "exec"
+    var y = CodeGen.resolveNumberInput(this, 2, "y");
+    var z = CodeGen.resolveNumberInput(this, 3, "z");
+    var yaw = CodeGen.resolveNumberInput(this, 4, "yaw");
+    CodeGen.emit("Ess.Player.teleport(" + x + ", " + y + ", " + z + ", " + yaw + ", " + this.properties.onDone + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/player/teleport", PlayerTeleport);
 })();

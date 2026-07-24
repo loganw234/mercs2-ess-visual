@@ -7,6 +7,7 @@
  *   src/95_ui_easy.lua       -- Ess.Easy.Menu
  *   src/23_time.lua          -- Ess.Easy.Time.slowmo
  *   src/62_triggers_easy.lua -- Ess.Easy.Triggers.*
+ *   src/20_loop.lua          -- Ess.Loop.start/.stop (Core tier, added in a later pass)
  *
  * CALLBACK PARAMETERS (Menu's entries, every Triggers function's fn): modeled as raw Lua-source TEXT, the
  * same "data is Lua source text" convention guids/points/factions lists already use (see codegen.js
@@ -292,4 +293,50 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/triggers/after", TriggerAfter);
+
+  // ============================================================
+  // Ess/Loop/Start -- Ess.Loop.start(id, interval, tickFn). tickFn is a Lua closure, modeled as raw
+  // Lua-source text same as every other callback param here -- returning `true` keeps the loop going,
+  // `false`/nil auto-stops it (see mercs2-lua-essentials/src/20_loop.lua for the full API, including the
+  // stats()/list() introspection this exact framework's Loop Monitor tooling was built around).
+  // ============================================================
+  var DEFAULT_TICK_FN = "function() Ess.Log('tick') return true end";
+
+  function LoopStart() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("id", "myLoop");
+    this.addWidget("text", "id", this.properties.id, function (v) { this.properties.id = v; }.bind(this));
+    this.addInput("interval", "number");
+    this.addProperty("interval", 1);
+    this.addWidget("number", "interval", this.properties.interval, function (v) { this.properties.interval = v; }.bind(this));
+    this.addProperty("tickFn", DEFAULT_TICK_FN);
+    this.addWidget("text", "tickFn", this.properties.tickFn, function (v) { this.properties.tickFn = v; }.bind(this));
+    this.size = [220, 100];
+  }
+  LoopStart.title = "Loop: Start";
+  LoopStart.desc = "Ess.Loop.start(id, interval, tickFn) -- tickFn is raw Lua function-literal text, see file header";
+  LoopStart.prototype.onAction = function () {
+    var interval = CodeGen.resolveNumberInput(this, 1, "interval");  // input 0 is "exec"
+    CodeGen.emit("Ess.Loop.start(" + CodeGen.luaString(this.properties.id) + ", " + interval + ", " + this.properties.tickFn + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/loop/start", LoopStart);
+
+  // ============================================================
+  // Ess/Loop/Stop -- Ess.Loop.stop(id)
+  // ============================================================
+  function LoopStop() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("id", "myLoop");
+    this.addWidget("text", "id", this.properties.id, function (v) { this.properties.id = v; }.bind(this));
+  }
+  LoopStop.title = "Loop: Stop";
+  LoopStop.desc = "Ess.Loop.stop(id)";
+  LoopStop.prototype.onAction = function () {
+    CodeGen.emit("Ess.Loop.stop(" + CodeGen.luaString(this.properties.id) + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/loop/stop", LoopStop);
 })();

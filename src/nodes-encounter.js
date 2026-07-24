@@ -257,4 +257,93 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/support/airstrikeonme", AirstrikeOnMe);
+
+  // ============================================================
+  // Ess/Relations/SetFeeling -- Ess.Relations.setFeeling(uGuidA, uGuidB, n) -- Core tier, per-INDIVIDUAL
+  // relation (not the whole faction, unlike every Easy.Relations.* node above). Verified against
+  // mercs2-lua-essentials/src/61_relations.lua.
+  // ============================================================
+  function RelationsSetFeeling() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("uGuidA", "string");
+    this.addProperty("uGuidA", "Ess.Player.character(0)");
+    this.addWidget("text", "uGuidA", this.properties.uGuidA, function (v) { this.properties.uGuidA = v; }.bind(this));
+    this.addInput("uGuidB", "string");
+    this.addProperty("uGuidB", "Ess.Player.character(0)");
+    this.addWidget("text", "uGuidB", this.properties.uGuidB, function (v) { this.properties.uGuidB = v; }.bind(this));
+    this.addInput("n", "number");
+    this.addProperty("n", -100);
+    this.addWidget("number", "n", this.properties.n, function (v) { this.properties.n = v; }.bind(this));
+  }
+  RelationsSetFeeling.title = "Relations: Set Feeling";
+  RelationsSetFeeling.desc = "Ess.Relations.setFeeling(uGuidA, uGuidB, n)";
+  RelationsSetFeeling.prototype.onAction = function () {
+    var uGuidA = CodeGen.resolveNumberInput(this, 1, "uGuidA");  // input 0 is "exec"; raw Lua expression, spliced unquoted
+    var uGuidB = CodeGen.resolveNumberInput(this, 2, "uGuidB");
+    var n = CodeGen.resolveNumberInput(this, 3, "n");
+    CodeGen.emit("Ess.Relations.setFeeling(" + uGuidA + ", " + uGuidB + ", " + n + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/relations/setfeeling", RelationsSetFeeling);
+
+  // ============================================================
+  // Ess/Relations/GetFeeling -- a PURE DATA node wrapping Ess.Relations.getFeeling(uGuidA, uGuidB) -> n.
+  // Emits the call expression as text, same "emit source text" idea as every other data node in this repo.
+  // ============================================================
+  function RelationsGetFeeling() {
+    this.addOutput("n", "number");
+    this.addProperty("uGuidA", "Ess.Player.character(0)");
+    this.addWidget("text", "uGuidA", this.properties.uGuidA, function (v) { this.properties.uGuidA = v; }.bind(this));
+    this.addProperty("uGuidB", "Ess.Player.character(0)");
+    this.addWidget("text", "uGuidB", this.properties.uGuidB, function (v) { this.properties.uGuidB = v; }.bind(this));
+  }
+  RelationsGetFeeling.title = "Relations: Get Feeling";
+  RelationsGetFeeling.desc = "Ess.Relations.getFeeling(uGuidA, uGuidB) -- emits Lua source, not a resolved number";
+  RelationsGetFeeling.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Relations.getFeeling(" + this.properties.uGuidA + ", " + this.properties.uGuidB + ")");
+  };
+  LiteGraph.registerNodeType("ess/relations/getfeeling", RelationsGetFeeling);
+
+  // ============================================================
+  // Ess/Relations/SetPerceivability -- Ess.Relations.setPerceivability(uGuid, n) -- per-individual AI
+  // detectability, the reversible mechanism Easy.Player.ghost is built on.
+  // ============================================================
+  function RelationsSetPerceivability() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("uGuid", "string");
+    this.addProperty("uGuid", "Ess.Player.character(0)");
+    this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
+    this.addInput("n", "number");
+    this.addProperty("n", 5);
+    this.addWidget("number", "n", this.properties.n, function (v) { this.properties.n = v; }.bind(this));
+  }
+  RelationsSetPerceivability.title = "Relations: Set Perceivability";
+  RelationsSetPerceivability.desc = "Ess.Relations.setPerceivability(uGuid, n)";
+  RelationsSetPerceivability.prototype.onAction = function () {
+    var uGuid = CodeGen.resolveNumberInput(this, 1, "uGuid");  // input 0 is "exec"; raw Lua expression, spliced unquoted
+    var n = CodeGen.resolveNumberInput(this, 2, "n");
+    CodeGen.emit("Ess.Relations.setPerceivability(" + uGuid + ", " + n + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/relations/setperceivability", RelationsSetPerceivability);
+
+  // ============================================================
+  // Ess/Relations/GetPerceivability -- a PURE DATA node wrapping Ess.Relations.getPerceivability(uGuid).
+  // Real return is (n, floor); this emits the bare call expression, so a single-value splice takes just n
+  // (the current value) -- same "own convention puts the primary value first" reasoning as
+  // nodes-player.js's Target Under Reticle node.
+  // ============================================================
+  function RelationsGetPerceivability() {
+    this.addOutput("n", "number");
+    this.addProperty("uGuid", "Ess.Player.character(0)");
+    this.addWidget("text", "uGuid", this.properties.uGuid, function (v) { this.properties.uGuid = v; }.bind(this));
+  }
+  RelationsGetPerceivability.title = "Relations: Get Perceivability";
+  RelationsGetPerceivability.desc = "Ess.Relations.getPerceivability(uGuid) -- emits Lua source; real return is (n,floor), only n survives a single-value splice";
+  RelationsGetPerceivability.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Relations.getPerceivability(" + this.properties.uGuid + ")");
+  };
+  LiteGraph.registerNodeType("ess/relations/getperceivability", RelationsGetPerceivability);
 })();

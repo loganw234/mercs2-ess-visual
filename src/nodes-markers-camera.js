@@ -257,4 +257,73 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/camera/shake", CameraShake);
+
+  // ============================================================
+  // Ess/Camera/Fov -- Ess.Camera.fov(i, nAngle, nDuration) -- Core tier, verified against
+  // mercs2-lua-essentials/src/51_camera.lua. `i` here is a literal player-slot INDEX (0 = local player),
+  // NOT a camera guid -- Graphics.Camera is a genuinely different native table than top-level Camera
+  // despite the shared name (see that file's own header for the confirmed cross-namespace footgun).
+  // ============================================================
+  function CameraFov() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("i", "number");
+    this.addProperty("i", 0);
+    this.addWidget("number", "i", this.properties.i, function (v) { this.properties.i = v; }.bind(this));
+    this.addInput("nAngle", "number");
+    this.addProperty("nAngle", 30);
+    this.addWidget("number", "nAngle", this.properties.nAngle, function (v) { this.properties.nAngle = v; }.bind(this));
+    this.addInput("nDuration", "number");
+    this.addProperty("nDuration", 1);
+    this.addWidget("number", "nDuration", this.properties.nDuration, function (v) { this.properties.nDuration = v; }.bind(this));
+  }
+  CameraFov.title = "Camera FOV";
+  CameraFov.desc = "Ess.Camera.fov(i, nAngle, nDuration) -- i is a player index, not a camera guid";
+  CameraFov.prototype.onAction = function () {
+    var i = CodeGen.resolveNumberInput(this, 1, "i");  // input 0 is "exec"
+    var nAngle = CodeGen.resolveNumberInput(this, 2, "nAngle");
+    var nDuration = CodeGen.resolveNumberInput(this, 3, "nDuration");
+    CodeGen.emit("Ess.Camera.fov(" + i + ", " + nAngle + ", " + nDuration + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/camera/fov", CameraFov);
+
+  // ============================================================
+  // Ess/Camera/RestoreFov -- Ess.Camera.restoreFov(i, nDuration) -- blends the FOV back to normal.
+  // ============================================================
+  function CameraRestoreFov() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("i", "number");
+    this.addProperty("i", 0);
+    this.addWidget("number", "i", this.properties.i, function (v) { this.properties.i = v; }.bind(this));
+    this.addInput("nDuration", "number");
+    this.addProperty("nDuration", 1);
+    this.addWidget("number", "nDuration", this.properties.nDuration, function (v) { this.properties.nDuration = v; }.bind(this));
+  }
+  CameraRestoreFov.title = "Camera Restore FOV";
+  CameraRestoreFov.desc = "Ess.Camera.restoreFov(i, nDuration)";
+  CameraRestoreFov.prototype.onAction = function () {
+    var i = CodeGen.resolveNumberInput(this, 1, "i");  // input 0 is "exec"
+    var nDuration = CodeGen.resolveNumberInput(this, 2, "nDuration");
+    CodeGen.emit("Ess.Camera.restoreFov(" + i + ", " + nDuration + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/camera/restorefov", CameraRestoreFov);
+
+  // ============================================================
+  // Ess/Camera/PanicRevert -- Ess.Camera.panicRevert(). No args -- force-releases EVERY active cinematic
+  // camera takeover, the always-works escape hatch (safe to fire blind, even with no cinematic active).
+  // ============================================================
+  function CameraPanicRevert() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+  }
+  CameraPanicRevert.title = "Camera Panic Revert";
+  CameraPanicRevert.desc = "Ess.Camera.panicRevert() -- force-release every active cinematic camera takeover";
+  CameraPanicRevert.prototype.onAction = function () {
+    CodeGen.emit("Ess.Camera.panicRevert()");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/camera/panicrevert", CameraPanicRevert);
 })();
