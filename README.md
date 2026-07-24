@@ -260,7 +260,7 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-ten namespace-grouped files added across three later passes, **164 nodes total** — every `Ess.Easy.*`
+ten namespace-grouped files added across three later passes, **168 nodes total** — every `Ess.Easy.*`
 function has a node (two narrow, documented exceptions below), plus a wide slice of the **Core** tier
 (the direct `Ess.*` namespaces, not just their `Easy` wrappers) for the namespaces modders touch most:
 
@@ -272,7 +272,7 @@ function has a node (two narrow, documented exceptions below), plus a wide slice
 | `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike`, plus Core `Relations.setFeeling`/`.getFeeling`/`.set-`/`.getPerceivability` |
 | `src/nodes-missions.js` | `Easy.Objective`, `Easy.Quest`, `Easy.Contract`, `Easy.Sandbox` |
 | `src/nodes-cinematic.js` | `Easy.Cinematic.play` (declarative cutscene timelines) |
-| `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers`, plus Core `Loop.start`/`.stop` |
+| `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers`, plus Core `Loop.start`/`.stop` and `Keys.*` |
 | `src/nodes-object.js` | Core `Ess.Object.*` (34 nodes — health/life, transform, physics, visibility/labels, spawn) |
 | `src/nodes-human-vehicle.js` | Core `Ess.Human.*` (14) and `Ess.Vehicle.*` (11) |
 | `src/nodes-hud-sound.js` | Core `Ess.Hud.*` and `Ess.Sound.*` |
@@ -359,7 +359,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 371 static node types** (164 Ess + 193 Native + 14 Flow Control), plus one dynamically-
+**Grand total: 375 static node types** (168 Ess + 193 Native + 14 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet

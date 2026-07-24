@@ -77,7 +77,7 @@
     "AI Orders": "encounterAI", "Relations": "encounterAI", "Support": "encounterAI",
     "Objective": "missions", "Quest": "missions", "Contract": "missions", "Sandbox": "missions", "Cinematic": "missions",
     "Camera": "presentation", "Markers": "presentation", "Hud": "presentation", "Sound": "presentation", "UI": "presentation",
-    "Console": "utility", "Impulse": "utility", "Time": "utility", "Triggers": "utility", "Loop": "utility",
+    "Console": "utility", "Impulse": "utility", "Time": "utility", "Triggers": "utility", "Loop": "utility", "Keys": "utility",
     "Native: Object": "nativeObject", "Native: Vehicle": "nativeVehicle", "Native: Human": "nativeHuman",
     "Native: Player": "nativePlayer", "Native: Marker": "nativeMarker", "Native: Camera": "nativeCamera",
     "Native: Hud": "nativeHud", "Native: Sound": "nativeSound",

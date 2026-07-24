@@ -1,4 +1,4 @@
-/* nodes-utility.js -- Ess.Easy.Console/Impulse/Menu/Time/Triggers node types. Same three-part shape as
+/* nodes-utility.js -- Ess.Easy.Console/Impulse/Menu/Time/Triggers/Keys node types. Same three-part shape as
  * nodes.js's header comment describes; this file only adds what's specific to the nodes below.
  *
  * Signatures verified directly against mercs2-lua-essentials source:
@@ -8,6 +8,7 @@
  *   src/23_time.lua          -- Ess.Easy.Time.slowmo
  *   src/62_triggers_easy.lua -- Ess.Easy.Triggers.*
  *   src/20_loop.lua          -- Ess.Loop.start/.stop (Core tier, added in a later pass)
+ *   src/25_keys.lua          -- Ess.Keys.* (Core tier, added in a later pass)
  *
  * CALLBACK PARAMETERS (Menu's entries, every Triggers function's fn): modeled as raw Lua-source TEXT, the
  * same "data is Lua source text" convention guids/points/factions lists already use (see codegen.js
@@ -348,4 +349,83 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/loop/stop", LoopStop);
+
+  // ============================================================
+  // Ess/Keys -- a whole PANEL of hotkeys inside ONE script, decoupled from the file-level KEYVAL/OnKey
+  // binding (which is exactly one key per compiled script -- see compiler.js's multi-trigger-key guardrail).
+  // Ess.Keys.on drains an edge-triggered key buffer on its own shared Ess.Loop, so a script that starts with
+  // one On Key Press can still own several independent hotkeys once it's running. Edge-triggered: a held key
+  // fires its handler ONCE, not every frame. CAVEAT (from src/25_keys.lua): this reads the same input buffer
+  // Ess.UI's focused widgets read -- don't bind Ess.Keys AND a focused Ess.UI.Menu to the same keys at once.
+  //
+  // `handler` is raw Lua function-literal text, same "data is Lua source text" convention every other
+  // callback param in this file uses (see the file header) -- fn(bShift), so a Shift+key combo is available
+  // as the handler's own parameter, not a separate node.
+  // ============================================================
+  function KeysOn() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("key", "F6");
+    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+    this.addProperty("handler", "function(shift) Ess.Log('key pressed') end");
+    this.addWidget("text", "handler", this.properties.handler, function (v) { this.properties.handler = v; }.bind(this));
+    this.size = [240, 100];
+  }
+  KeysOn.title = "Keys: On";
+  KeysOn.desc = "Ess.Keys.on(key, fn) -- binds a key inside THIS script (independent of the file's own OnKey binding); fn is raw Lua function-literal text, fn(bShift), see file header";
+  KeysOn.prototype.onAction = function () {
+    CodeGen.emit("Ess.Keys.on(" + CodeGen.luaString(this.properties.key) + ", " + this.properties.handler + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/keys/on", KeysOn);
+
+  // ============================================================
+  // Ess/Keys/Off -- Ess.Keys.off(key) -- stop handling that key (the binding, not the loop; the loop
+  // self-stops on its own once nothing is bound at all, see src/25_keys.lua).
+  // ============================================================
+  function KeysOff() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("key", "F6");
+    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+  }
+  KeysOff.title = "Keys: Off";
+  KeysOff.desc = "Ess.Keys.off(key)";
+  KeysOff.prototype.onAction = function () {
+    CodeGen.emit("Ess.Keys.off(" + CodeGen.luaString(this.properties.key) + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/keys/off", KeysOff);
+
+  // ============================================================
+  // Ess/Keys/Clear -- Ess.Keys.clear() -- drop every binding at once, no args.
+  // ============================================================
+  function KeysClear() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+  }
+  KeysClear.title = "Keys: Clear";
+  KeysClear.desc = "Ess.Keys.clear()";
+  KeysClear.prototype.onAction = function () {
+    CodeGen.emit("Ess.Keys.clear()");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/keys/clear", KeysClear);
+
+  // ============================================================
+  // Ess/Keys/IsBound -- Ess.Keys.isBound(key) -> bool. Pure-data: emits a Lua boolean-EXPRESSION as text,
+  // never a resolved value here (see codegen.js's header) -- same convention every other query getter in
+  // this repo follows (e.g. Object: Alive).
+  // ============================================================
+  function KeysIsBound() {
+    this.addProperty("key", "F6");
+    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+    this.addOutput("bound", "string");
+  }
+  KeysIsBound.title = "Keys: Is Bound";
+  KeysIsBound.desc = "Ess.Keys.isBound(key) -- emits Lua source, not a resolved boolean (see codegen.js header)";
+  KeysIsBound.prototype.onExecute = function () {
+    this.setOutputData(0, "Ess.Keys.isBound(" + CodeGen.luaString(this.properties.key) + ")");
+  };
+  LiteGraph.registerNodeType("ess/keys/isbound", KeysIsBound);
 })();
