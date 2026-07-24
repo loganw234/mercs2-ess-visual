@@ -39,9 +39,19 @@
       <select id="sampleSelect"></select>
       <p class="hint" id="sampleHint"></p>
     </div>
+    <div class="live">
+      <div class="live-row">
+        <span class="dot" id="dot"></span>
+        <span class="statustext" id="statusText">not connected</span>
+        <button id="btnConnect">Connect</button>
+      </div>
+      <p class="hint">Connects to lua-bridge on the running game (ws://127.0.0.1:27050). Run sends the
+        compiled script over and watches the exec chain light up here as it (notionally) fires.</p>
+    </div>
     <div class="actions">
       <button id="btnCompile">Compile</button>
       <button id="btnDownload">Download .lua</button>
+      <button class="primary" id="btnRun" disabled>Run in game</button>
     </div>
     <div id="status"></div>
     <pre id="code"></pre>
@@ -59,6 +69,9 @@
 <script src="src/palette.js"></script>
 <script src="src/samples.js"></script>
 <script src="src/compiler.js"></script>
+<script src="lib/bridge-client.js"></script>
+<script src="src/bridge.js"></script>
+<script src="src/runviz.js"></script>
 <script src="src/app.js"></script>
 </body>
 </html>
