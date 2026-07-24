@@ -13,6 +13,13 @@
 (function () {
   "use strict";
 
+  // The only faction names Ess.Relations/Pg.GetGuidByName actually recognize (confirmed against
+  // src/61_relations.lua's own FACTION_ABBREV table keys, cross-checked against the decompiled engine's
+  // Pg.GetGuidByName("Allied"|"VZ"|"OC") call sites) -- anything else silently resolves to nil and no-ops.
+  // A free-text widget here just invited typos ("chinese"/"russian" were never real values); a combo
+  // dropdown makes a bad value unreachable instead of merely undocumented.
+  var FACTIONS = ["Allied", "China", "Guerilla", "OC", "Pirate", "VZ", "PMC"];
+
   // ============================================================
   // Ess/AIOrders/Attack -- Ess.Easy.AIOrders.attack(guids, target)
   // ============================================================
@@ -92,11 +99,11 @@
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
     this.addInput("factions", "string");
-    this.addProperty("factions", "{ 'chinese' }");
-    this.addWidget("text", "factions", this.properties.factions, function (v) { this.properties.factions = v; }.bind(this));
+    this.addProperty("factions", "{ 'China' }");
+    this.addWidget("combo", "faction", FACTIONS[1], function (v) { this.properties.factions = "{ '" + v + "' }"; }.bind(this), { values: FACTIONS });
   }
   RelationsMakeHostile.title = "Relations: Make Hostile";
-  RelationsMakeHostile.desc = "Ess.Easy.Relations.makeHostile(factionList)";
+  RelationsMakeHostile.desc = "Ess.Easy.Relations.makeHostile(factionList) -- one faction per node; chain more Make Hostile nodes for more than one";
   RelationsMakeHostile.prototype.onAction = function () {
     var factions = CodeGen.resolveNumberInput(this, 1, "factions");  // input 0 is "exec"
     CodeGen.emit("Ess.Easy.Relations.makeHostile(" + factions + ")");
@@ -111,11 +118,11 @@
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
     this.addInput("factions", "string");
-    this.addProperty("factions", "{ 'chinese' }");
-    this.addWidget("text", "factions", this.properties.factions, function (v) { this.properties.factions = v; }.bind(this));
+    this.addProperty("factions", "{ 'China' }");
+    this.addWidget("combo", "faction", FACTIONS[1], function (v) { this.properties.factions = "{ '" + v + "' }"; }.bind(this), { values: FACTIONS });
   }
   RelationsMakeAllies.title = "Relations: Make Allies";
-  RelationsMakeAllies.desc = "Ess.Easy.Relations.makeAllies(factionList)";
+  RelationsMakeAllies.desc = "Ess.Easy.Relations.makeAllies(factionList) -- allies every faction in the list with each other; wire a custom list in for more than one";
   RelationsMakeAllies.prototype.onAction = function () {
     var factions = CodeGen.resolveNumberInput(this, 1, "factions");  // input 0 is "exec"
     CodeGen.emit("Ess.Easy.Relations.makeAllies(" + factions + ")");
@@ -131,11 +138,11 @@
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
     this.addInput("a", "string");
-    this.addProperty("a", "chinese");
-    this.addWidget("text", "a", this.properties.a, function (v) { this.properties.a = v; }.bind(this));
+    this.addProperty("a", "China");
+    this.addWidget("combo", "a", this.properties.a, function (v) { this.properties.a = v; }.bind(this), { values: FACTIONS });
     this.addInput("b", "string");
-    this.addProperty("b", "russian");
-    this.addWidget("text", "b", this.properties.b, function (v) { this.properties.b = v; }.bind(this));
+    this.addProperty("b", "VZ");
+    this.addWidget("combo", "b", this.properties.b, function (v) { this.properties.b = v; }.bind(this), { values: FACTIONS });
   }
   RelationsWar.title = "Relations: War";
   RelationsWar.desc = "Ess.Easy.Relations.war(a, b)";
@@ -155,11 +162,11 @@
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
     this.addInput("friend", "string");
-    this.addProperty("friend", "chinese");
-    this.addWidget("text", "friend", this.properties.friend, function (v) { this.properties.friend = v; }.bind(this));
+    this.addProperty("friend", "China");
+    this.addWidget("combo", "friend", this.properties.friend, function (v) { this.properties.friend = v; }.bind(this), { values: FACTIONS });
     this.addInput("foe", "string");
-    this.addProperty("foe", "russian");
-    this.addWidget("text", "foe", this.properties.foe, function (v) { this.properties.foe = v; }.bind(this));
+    this.addProperty("foe", "VZ");
+    this.addWidget("combo", "foe", this.properties.foe, function (v) { this.properties.foe = v; }.bind(this), { values: FACTIONS });
   }
   RelationsSideWith.title = "Relations: Side With";
   RelationsSideWith.desc = "Ess.Easy.Relations.sideWith(friend, foe)";
