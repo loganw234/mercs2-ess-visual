@@ -109,6 +109,28 @@
   LiteGraph.registerNodeType("ess/followers/orderguard", FollowersOrderGuard);
 
   // ============================================================
+  // Ess/Followers/OrderFollow -- Ess.Followers.order("follow", {target=}) -- puts the whole current roster
+  // back into regular Follow (auto-holds distance, rides along in vehicles) after a guard/patrol/attack
+  // order. Guard/hold/a looping patrol have no natural "done" (see the Lua module's own header) -- this is
+  // the explicit way back for those; attack/move/non-looping patrol already resume Follow on their own.
+  // ============================================================
+  function FollowersOrderFollow() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("target", "string");
+    this.addProperty("target", "Ess.Player.character(0)");
+    this.addWidget("text", "target", this.properties.target, function (v) { this.properties.target = v; }.bind(this));
+  }
+  FollowersOrderFollow.title = "Followers: Order Follow";
+  FollowersOrderFollow.desc = "Ess.Followers.order('follow', {target=target}) -- puts the whole current roster back into regular Follow. The explicit way back for guard/hold/a looping patrol, which never resume Follow on their own.";
+  FollowersOrderFollow.prototype.onAction = function () {
+    var target = CodeGen.resolveNumberInput(this, 1, "target");
+    CodeGen.emit("Ess.Followers.order('follow', {target=" + target + "})");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/followers/orderfollow", FollowersOrderFollow);
+
+  // ============================================================
   // Ess/Followers/SetMarkersEnabled -- Ess.Followers.setMarkersEnabled(bOn). ON by default (see the Lua
   // module's own header) -- wire this to explicitly turn markers off, or back on after turning them off.
   // ============================================================

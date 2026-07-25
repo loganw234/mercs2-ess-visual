@@ -297,7 +297,7 @@ function has a node (two narrow, documented exceptions below), plus a wide slice
 | `src/nodes-player.js` | `Easy.Player`, `Easy.Human`, `Easy.Debug`, plus Core `Player.camera`/`.targetUnderReticle`/`.inVehicle`/`.onFoot`/`.giveFuel`/`.removeBoundaries`/`.setInputEnabled`/`.rumble`/`.teleport` |
 | `src/nodes-markers-camera.js` | `Easy.Mark`, `Easy.Camera`, `Easy.Sound`, `Easy.Confirm`, plus Core `Camera.fov`/`.restoreFov`/`.panicRevert` |
 | `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike`, plus Core `Relations.setFeeling`/`.getFeeling`/`.set-`/`.getPerceivability` |
-| `src/nodes-followers.js` | `Ess.Followers` (Core `recruit`/`dismiss`/`order`/`setMarkersEnabled`/`isFollower`/`count`, plus Easy's `recruit`/`orderAttack`/`orderPatrol`/`orderGuard`), and two "visual compactor" nodes (`Guard My Position`, `Patrol Around Me` — see below) |
+| `src/nodes-followers.js` | `Ess.Followers` (Core `recruit`/`dismiss`/`order`/`setMarkersEnabled`/`isFollower`/`count` — `Order Follow` is `order("follow", ...)` directly, no Easy wrapper of its own — plus Easy's `recruit`/`orderAttack`/`orderPatrol`/`orderGuard`), and two "visual compactor" nodes (`Guard My Position`, `Patrol Around Me` — see below) |
 | `src/nodes-missions.js` | `Easy.Objective`, `Easy.Quest`, `Easy.Contract`, `Easy.Sandbox` |
 | `src/nodes-cinematic.js` | `Easy.Cinematic.play` (declarative cutscene timelines) |
 | `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers`, plus Core `Loop.start`/`.stop` and `Keys.*` |
@@ -415,7 +415,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 390 static node types** (180 Ess + 193 Native + 17 Flow Control), plus one dynamically-
+**Grand total: 391 static node types** (181 Ess + 193 Native + 17 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet
