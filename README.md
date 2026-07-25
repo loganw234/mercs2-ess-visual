@@ -287,7 +287,7 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-eleven namespace-grouped files added across four later passes, **183 nodes total** — every `Ess.Easy.*`
+twelve namespace-grouped files added across five later passes, **201 nodes total** — every `Ess.Easy.*`
 function has a node (two narrow, documented exceptions below), plus a wide slice of the **Core** tier
 (the direct `Ess.*` namespaces, not just their `Easy` wrappers) for the namespaces modders touch most:
 
@@ -298,6 +298,7 @@ function has a node (two narrow, documented exceptions below), plus a wide slice
 | `src/nodes-markers-camera.js` | `Easy.Mark`, `Easy.Camera`, `Easy.Sound`, `Easy.Confirm`, plus Core `Camera.fov`/`.restoreFov`/`.panicRevert` |
 | `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike`, plus Core `Relations.setFeeling`/`.getFeeling`/`.set-`/`.getPerceivability` |
 | `src/nodes-followers.js` | `Ess.Followers` (Core `recruit`/`dismiss`/`order`/`setMarkersEnabled`/`isFollower`/`count` — `Order Follow` is `order("follow", ...)` directly, no Easy wrapper of its own — plus Easy's `recruit`/`orderAttack`/`orderPatrol`/`orderGuard`), and two "visual compactor" nodes (`Guard My Position`, `Patrol Around Me` — see below) |
+| `src/nodes-squad.js` | `Ess.Squad` — team/role (`createTeam`/`assignRole`/`orderTeamAttack`/`orderTeamPatrol`/`orderTeamGuard`/`orderTeamFollow`/`teamOf`/`roleOf`), the async `queue`/`queueStep`/`cancelQueue` sequence builder, `Ess.Squad.Tactics.mountUp`/`dismountAndSecure`, `setFormation`/`clearFormation`, plus three "visual compactor" nodes (`Add To Team`, `Guard Team Here`, `Patrol Team Around Me` — see below) |
 | `src/nodes-missions.js` | `Easy.Objective`, `Easy.Quest`, `Easy.Contract`, `Easy.Sandbox` |
 | `src/nodes-cinematic.js` | `Easy.Cinematic.play` (declarative cutscene timelines) |
 | `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers`, plus Core `Loop.start`/`.stop`, `Input.held` (`Is Key Held`), and `Keys.*` |
@@ -317,13 +318,29 @@ Markers Enabled` toggles them); a follower auto-resumes Follow on natural comple
 a non-looping move/patrol finishes) — guard/hold/a looping patrol have no natural "done" and stay on that
 order until told otherwise.
 
+**`Ess.Squad`** is an opt-in team/role layer over `Ess.Followers`, for a graph managing enough followers
+that "the whole roster" stops being the right unit of command. `Squad: Create Team` (re)defines a named
+subset of already-`recruit()`'d guids; `Squad: Order Team Attack`/`Patrol`/`Guard`/`Follow` command just
+that team without disturbing anyone else's team (or the un-teamed rest of the roster). `Squad: Queue` runs
+an async multi-step sequence (`Squad: Queue Step` builds each `{behavior=, opts=, timeout=}` entry, combined
+with `Combine List (4)`) — wire its `on complete` output for a real exec chain once every step finishes, the
+same wired-output pattern `Loop: Start`'s `on tick` uses. `Squad: Mount Up` seats whoever's
+`Squad: Assign Role`'d `"driver"` first, everyone else as passenger/gunner, firing once everyone's boarded;
+`Squad: Dismount And Secure` disembarks the whole team (driver included) and holds a defend perimeter.
+`Squad: Set Formation` (`wedge`/`column`/`line`/`diamond`) is deliberately "visual sugar," not a precision
+tactical system — a squad walking staggered waypoints around its leader, recomputed every tick.
+
 **"Visual compactor" nodes** collapse a multi-node chain this tool's own boilerplate graphs kept needing by
 hand into one node, still spliced as plain Lua text like everything else here — not a new codegen mechanism,
-just fewer nodes to wire for a common shape. Three so far: `Spawn Friendly Unit` (`Player: Get Position` +
+just fewer nodes to wire for a common shape. Six so far: `Spawn Friendly Unit` (`Player: Get Position` +
 offset trig + `Object: Spawn` + `Relations: Set Feeling` both ways, picked by an angle/distance around the
 player instead of hand-typed x/z offsets), `Followers: Guard My Position` (`Player: Get Position` + `Combine
-Coordinates` + `Followers: Order Guard`), and `Followers: Patrol Around Me` (builds a 4-corner box patrol
-route around the player from a single radius, instead of hand-typing a `{ {x=...}, ... }` points table).
+Coordinates` + `Followers: Order Guard`), `Followers: Patrol Around Me` (builds a 4-corner box patrol route
+around the player from a single radius, instead of hand-typing a `{ {x=...}, ... }` points table),
+`Squad: Add To Team` (`Followers: Recruit` + read the team's current members + append + `Squad: Create
+Team`, so adding one unit to a squad never needs re-listing everyone already on it), and the team-scoped
+`Squad: Guard Team Here`/`Patrol Team Around Me` (the same two shapes as their whole-roster `Followers: *`
+counterparts, just ordering one team instead of the whole roster).
 
 Within this Ess tier, coverage favors the namespaces a mod script actually reaches for
 (Object/Human/Vehicle/Player/Camera/Relations/Hud/Sound/Loop) over generic infrastructure (`Ess.Table.*`,
@@ -419,7 +436,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 393 static node types** (183 Ess + 193 Native + 17 Flow Control), plus one dynamically-
+**Grand total: 411 static node types** (201 Ess + 193 Native + 17 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet
