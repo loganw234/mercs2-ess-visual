@@ -1,3 +1,10 @@
 .DS_Store
 Thumbs.db
-.claude/
+
+# Claude Code state: machine-local settings stay out, but the repo-level skill and the dev-server config
+# are real project files -- ess-graph-build/SKILL.md documents this repo's own graph-building and
+# verification workflow, and launch.json is the static server the skill tells you to start.
+.claude/*
+!.claude/launch.json
+!.claude/skills/
+.claude/settings.local.json
