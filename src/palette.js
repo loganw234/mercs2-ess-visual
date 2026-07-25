@@ -74,7 +74,7 @@
     "World": "worldSpawn", "Spawn": "worldSpawn", "Object": "worldSpawn", "General": "worldSpawn",
     "Player": "playerHuman", "Human": "playerHuman", "Debug": "playerHuman", "Fun": "playerHuman",
     "Vehicle": "vehicle",
-    "AI Orders": "encounterAI", "Relations": "encounterAI", "Support": "encounterAI",
+    "AI Orders": "encounterAI", "Relations": "encounterAI", "Support": "encounterAI", "Followers": "encounterAI",
     "Objective": "missions", "Quest": "missions", "Contract": "missions", "Sandbox": "missions", "Cinematic": "missions",
     "Camera": "presentation", "Markers": "presentation", "Hud": "presentation", "Sound": "presentation", "UI": "presentation",
     "Console": "utility", "Impulse": "utility", "Time": "utility", "Triggers": "utility", "Loop": "utility", "Keys": "utility",

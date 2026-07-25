@@ -287,7 +287,7 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-ten namespace-grouped files added across three later passes, **169 nodes total** — every `Ess.Easy.*`
+eleven namespace-grouped files added across four later passes, **180 nodes total** — every `Ess.Easy.*`
 function has a node (two narrow, documented exceptions below), plus a wide slice of the **Core** tier
 (the direct `Ess.*` namespaces, not just their `Easy` wrappers) for the namespaces modders touch most:
 
@@ -297,12 +297,33 @@ function has a node (two narrow, documented exceptions below), plus a wide slice
 | `src/nodes-player.js` | `Easy.Player`, `Easy.Human`, `Easy.Debug`, plus Core `Player.camera`/`.targetUnderReticle`/`.inVehicle`/`.onFoot`/`.giveFuel`/`.removeBoundaries`/`.setInputEnabled`/`.rumble`/`.teleport` |
 | `src/nodes-markers-camera.js` | `Easy.Mark`, `Easy.Camera`, `Easy.Sound`, `Easy.Confirm`, plus Core `Camera.fov`/`.restoreFov`/`.panicRevert` |
 | `src/nodes-encounter.js` | `Easy.AIOrders`, `Easy.Relations`, `Easy.Airstrike`, plus Core `Relations.setFeeling`/`.getFeeling`/`.set-`/`.getPerceivability` |
+| `src/nodes-followers.js` | `Ess.Followers` (Core `recruit`/`dismiss`/`order`/`setMarkersEnabled`/`isFollower`/`count`, plus Easy's `recruit`/`orderAttack`/`orderPatrol`/`orderGuard`), and two "visual compactor" nodes (`Guard My Position`, `Patrol Around Me` — see below) |
 | `src/nodes-missions.js` | `Easy.Objective`, `Easy.Quest`, `Easy.Contract`, `Easy.Sandbox` |
 | `src/nodes-cinematic.js` | `Easy.Cinematic.play` (declarative cutscene timelines) |
 | `src/nodes-utility.js` | `Easy.Console`, `Easy.Impulse`, `Easy.Menu` (`ess/ui/menu`), `Easy.Time`, `Easy.Triggers`, plus Core `Loop.start`/`.stop` and `Keys.*` |
-| `src/nodes-object.js` | Core `Ess.Object.*` (34 nodes — health/life, transform, physics, visibility/labels, spawn) |
+| `src/nodes-object.js` | Core `Ess.Object.*` (34 nodes — health/life, transform, physics, visibility/labels, spawn), plus the `Spawn Friendly Unit` "visual compactor" (see below) |
 | `src/nodes-human-vehicle.js` | Core `Ess.Human.*` (14) and `Ess.Vehicle.*` (11) |
 | `src/nodes-hud-sound.js` | Core `Ess.Hud.*` and `Ess.Sound.*` |
+
+**`Ess.Followers`** is a lifecycle-aware "who's currently assigned to me" roster, built entirely on
+`Ess.AIOrders`/`Ess.On.death`/`Ess.Mark` — `Ess.AIOrders.command` itself is stateless (every call re-passes
+an explicit guid list, and never remembers who you've recruited). `Followers: Recruit` runs the confirmed
+`Ai.Feeling`/`Ai.LivingWorld`/`Ai.SetState("Vip")`/`Ai.Role("Follow")` sequence AND remembers the guid;
+`Followers: Dismiss` reverts it AND forgets it; a dead follower prunes itself automatically, no polling. The
+payoff is `Followers: Order Attack`/`Order Patrol`/`Order Guard` — command the WHOLE current roster with no
+guid list to re-thread through the graph at all. Per-follower world markers (each in its own color) plus a
+temporary marker at wherever the current order's destination/target is are ON by default (`Followers: Set
+Markers Enabled` toggles them); a follower auto-resumes Follow on natural completion (attack's target dies,
+a non-looping move/patrol finishes) — guard/hold/a looping patrol have no natural "done" and stay on that
+order until told otherwise.
+
+**"Visual compactor" nodes** collapse a multi-node chain this tool's own boilerplate graphs kept needing by
+hand into one node, still spliced as plain Lua text like everything else here — not a new codegen mechanism,
+just fewer nodes to wire for a common shape. Three so far: `Spawn Friendly Unit` (`Player: Get Position` +
+offset trig + `Object: Spawn` + `Relations: Set Feeling` both ways, picked by an angle/distance around the
+player instead of hand-typed x/z offsets), `Followers: Guard My Position` (`Player: Get Position` + `Combine
+Coordinates` + `Followers: Order Guard`), and `Followers: Patrol Around Me` (builds a 4-corner box patrol
+route around the player from a single radius, instead of hand-typing a `{ {x=...}, ... }` points table).
 
 Within this Ess tier, coverage favors the namespaces a mod script actually reaches for
 (Object/Human/Vehicle/Player/Camera/Relations/Hud/Sound/Loop) over generic infrastructure (`Ess.Table.*`,
@@ -394,7 +415,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 379 static node types** (169 Ess + 193 Native + 17 Flow Control), plus one dynamically-
+**Grand total: 390 static node types** (180 Ess + 193 Native + 17 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet

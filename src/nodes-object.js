@@ -768,6 +768,50 @@
   LiteGraph.registerNodeType("ess/object/spawn", ObjectSpawn);
 
   // ============================================================
+  // Ess/Object/SpawnFriendly -- "visual compactor": Ess.Player.pose(0) + trig offset + Ess.Object.spawn +
+  // Ess.Relations.setFeeling (both directions, 100), collapsed into ONE node. Replaces the "spawn N friendly
+  // units around the player" pattern this tool's own boilerplate graphs kept needing by hand (Player: Get
+  // Position -> Number: Add/Subtract, one pair per unit -> Object: Spawn -> Relations: Set Feeling) with one
+  // block per unit: pick an angle (0-360 degrees, clockwise, 0 = +Z/north) and a distance, get a
+  // friendly-by-default unit at that offset around wherever the player is standing THIS TICK.
+  // ============================================================
+  function SpawnFriendlyUnit() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addProperty("sTemplate", "Allied Medic");
+    this.addWidget("text", "sTemplate", this.properties.sTemplate, function (v) { this.properties.sTemplate = v; }.bind(this));
+    this.addProperty("angle", 0);
+    this.addWidget("number", "angle (0-360)", this.properties.angle, function (v) { this.properties.angle = v; }.bind(this));
+    this.addProperty("distance", 8);
+    this.addWidget("number", "distance", this.properties.distance, function (v) { this.properties.distance = v; }.bind(this));
+    this.addOutput("guid", "string");
+  }
+  SpawnFriendlyUnit.title = "Spawn Friendly Unit";
+  SpawnFriendlyUnit.desc = "Spawns sTemplate at (angle, distance) around the player's CURRENT position, friendly both ways via Ess.Relations.setFeeling -- the compacted \"Player: Get Position + offset math + Spawn + Relations: Set Feeling\" chain, one node per unit.";
+  SpawnFriendlyUnit.prototype.onAction = function () {
+    var sTemplate = CodeGen.luaString(this.properties.sTemplate);
+    var angle = this.properties.angle;
+    var distance = this.properties.distance;
+    var pxVar = CodeGen.newLocal("fpx");
+    var pyVar = CodeGen.newLocal("fpy");
+    var pzVar = CodeGen.newLocal("fpz");
+    CodeGen.emit("local " + pxVar + ", " + pyVar + ", " + pzVar + " = Ess.Player.pose(0)");
+    var radVar = CodeGen.newLocal("frad");
+    CodeGen.emit("local " + radVar + " = math.rad(" + angle + ")");
+    var sxVar = CodeGen.newLocal("fsx");
+    var szVar = CodeGen.newLocal("fsz");
+    CodeGen.emit("local " + sxVar + " = " + pxVar + " + math.sin(" + radVar + ") * " + distance);
+    CodeGen.emit("local " + szVar + " = " + pzVar + " + math.cos(" + radVar + ") * " + distance);
+    var guidVar = CodeGen.newLocal("friendly");
+    CodeGen.emitCapture(guidVar, "Ess.Object.spawn(" + sTemplate + ", " + sxVar + ", " + pyVar + ", " + szVar + ", 0)");
+    CodeGen.emit("Ess.Relations.setFeeling(" + guidVar + ", Ess.Player.character(0), 100)");
+    CodeGen.emit("Ess.Relations.setFeeling(Ess.Player.character(0), " + guidVar + ", 100)");
+    this.setOutputData(1, guidVar);
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/object/spawnfriendly", SpawnFriendlyUnit);
+
+  // ============================================================
   // Vehicle-entry
   // ============================================================
 
