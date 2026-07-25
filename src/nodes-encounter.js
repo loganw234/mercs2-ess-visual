@@ -100,7 +100,10 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addInput("factions", "string");
     this.addProperty("factions", "{ 'China' }");
-    this.addWidget("combo", "faction", FACTIONS[1], function (v) { this.properties.factions = "{ '" + v + "' }"; }.bind(this), { values: FACTIONS });
+    // inputName: this widget is a singular "faction" picker that wraps its choice into the plural
+    // `factions` table the input carries, so its name deliberately doesn't match the slot it edits --
+    // declared explicitly so wiredwidgets.js still greys it out when that input is wired.
+    this.addWidget("combo", "faction", FACTIONS[1], function (v) { this.properties.factions = "{ '" + v + "' }"; }.bind(this), { values: FACTIONS, inputName: "factions" });
   }
   RelationsMakeHostile.title = "Relations: Make Hostile";
   RelationsMakeHostile.desc = "Ess.Easy.Relations.makeHostile(factionList) -- one faction per node; chain more Make Hostile nodes for more than one";
@@ -119,7 +122,8 @@
     this.addOutput("then", LiteGraph.EVENT);
     this.addInput("factions", "string");
     this.addProperty("factions", "{ 'China' }");
-    this.addWidget("combo", "faction", FACTIONS[1], function (v) { this.properties.factions = "{ '" + v + "' }"; }.bind(this), { values: FACTIONS });
+    // inputName: same singular-widget/plural-input mismatch as Make Hostile above -- see its comment.
+    this.addWidget("combo", "faction", FACTIONS[1], function (v) { this.properties.factions = "{ '" + v + "' }"; }.bind(this), { values: FACTIONS, inputName: "factions" });
   }
   RelationsMakeAllies.title = "Relations: Make Allies";
   RelationsMakeAllies.desc = "Ess.Easy.Relations.makeAllies(factionList) -- allies every faction in the list with each other; wire a custom list in for more than one";

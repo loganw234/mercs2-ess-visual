@@ -53,6 +53,8 @@
       <div><span class="swatch str"></span> string / other data</div>
       <p>Right-click empty canvas for the same list. Drag from a node's dot to wire it. Click a node below
         to drop it onto the canvas.</p>
+      <p>A <b>dimmed field</b> means a wire is feeding that input, so the wire's value wins and the field
+        is locked. Unplug the wire to type a value again.</p>
       <p><b>Shortcuts:</b> Del removes the selection. Ctrl+C / Ctrl+V copy and paste (also how you
         duplicate a node). Ctrl+A selects all. Ctrl+Z / Ctrl+Y undo and redo. F fits the graph on screen.
         <b>Double-click empty canvas</b> to search every node by name.</p>
@@ -87,6 +89,7 @@
 <script src="lib/litegraph.js"></script>
 <script src="src/widgetsync.js"></script>
 <script src="src/nodesize.js"></script>
+<script src="src/wiredwidgets.js"></script>
 <script src="src/codegen.js"></script>
 <script src="src/nodes.js"></script>
 <script src="src/nodes-world.js"></script>

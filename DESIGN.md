@@ -201,7 +201,7 @@ the code:
    having `onConfigure` only re-derive the plain-JS paramNames/returnNames cache from the (already-correct)
    restored properties, never touching the pins themselves.
 
-## The two patches to litegraph
+## The three patches to litegraph
 
 `lib/litegraph.js` is vendored **unmodified**, so it can be re-vendored from upstream without a diff.
 Everything this tool needs to change about litegraph's behavior is a monkey-patch in our own file, loaded
@@ -225,6 +225,19 @@ right after it:
   patch measures the real rendered text with litegraph's own widget font and widens the node at creation
   time (never shrinks it, never fights a size you set by hand, capped so a node holding a whole Lua function
   literal doesn't demand a canvas-wide box).
+- **`src/wiredwidgets.js`** — almost every data input here is a *pair*: a pin and a widget editing the same
+  value, where the pin silently wins (that's `CodeGen.resolveInput`'s contract). Nothing on the canvas said
+  so, which cut both ways — a node with a guid wired in still showed an editable-looking
+  `Ess.Player.character(0)` that did nothing when you changed it, and on a node with three widgets there was
+  no way to see which one the script would actually use. A widget whose matching input is connected now gets
+  `w.disabled = true`, and litegraph does the rest: `drawNodeWidgets` halves its alpha and drops its outline,
+  `processNodeWidgets` skips it entirely so clicks and the edit prompt never reach it. The flag is recomputed
+  from `input.link` right before each draw and each click rather than tracked on connect — stateless, so it
+  can't drift across `configure()`, undo/redo, paste, or a node being deleted out from under a wire. Widgets
+  map to inputs by name (minus any " (parenthetical hint)"), covering 524 of 526 data inputs; the two that
+  differ for real — Relations: Make Hostile/Make Allies, whose `faction` combo wraps one name into the
+  plural `factions` table its input carries — declare an explicit `inputName` in their `addWidget` options
+  rather than being papered over with a plural-guessing rule.
 
 ## Node colors
 
