@@ -63,6 +63,10 @@ window.Samples = (function () {
     if (!n) throw new Error("samples.js: unknown node type " + type);
     n.pos = pos;
     if (props) Object.keys(props).forEach(function (k) { setProp(n, k, props[k]); });
+    // Re-fit AFTER the props are applied. LiteGraph.createNode already width-fits (see nodesize.js), but it
+    // can only measure the construction-time defaults -- a sample that sets a longer template/message than
+    // the default would still render its label and value overprinted without this second pass.
+    if (window.NodeSize) NodeSize.fit(n);
     graph.add(n);
     return n;
   }
@@ -73,6 +77,19 @@ window.Samples = (function () {
   // The position/distance report has no dedicated nodes (Ess.Object.pos and Ess.Math.dist2D are both
   // multi-value/utility calls this tool doesn't wrap -- see README) so it's one Custom Code line instead,
   // referencing the Spawn Ahead node's captured guid by its exact compiled name, __spawn1.
+  //
+  // THIS SAMPLE WIRES ITS GUID RATHER THAN TYPING IT, deliberately -- it's the default graph, the first
+  // thing anyone opening this tool sees, so it should demonstrate the one thing a node graph does that a
+  // text editor doesn't: drag a wire from Spawn Ahead's "guid" output into Face Object's and Heal's "guid"
+  // inputs and the value flows, no name to know. The alternative (setProp(face, "guid", "__spawn1"), which
+  // is what this sample used to do) teaches a beginner to memorize CodeGen.newLocal's internal numbering,
+  // and silently breaks the moment another spawn lands earlier in the chain and renumbers it. Signatures
+  // checked against Ess itself (src/11_object.lua): spawnAhead(sTemplate, nDist, ...) -> uGuid | nil,
+  // faceObject(uGuid, uTarget), heal(uGuid) -- so the captured guid is the FIRST argument of both
+  // consumers, which is the "guid" input slot on each node here. The two raw-text references that remain
+  // (the Custom Code block and the cleanup trigger's `fn`) still need __spawn1 by name: neither has a pin
+  // to wire into, which is exactly the gap Custom Code exists to fill. Wiring doesn't change that name --
+  // Spawn Ahead still mints __spawn1 either way.
   define("spawn-and-control", "Spawn & Control",
     "On Key Press -> spawn a car ahead (capture its guid), face it at you, heal it, log where it landed, and remove it after 6s.",
     function (graph) {
@@ -86,13 +103,15 @@ window.Samples = (function () {
       var cleanup = node(graph, "ess/triggers/after", [1180, 220], {
         seconds: 6, fn: "function() Ess.Object.remove(__spawn1) end"
       });
-      setProp(face, "guid", "__spawn1"); // matches the guid Spawn Ahead captures as -- see file header
-      setProp(heal, "guid", "__spawn1");
       onKey.connect(0, spawn, 0);
       spawn.connect(0, face, 0);
       face.connect(0, heal, 0);
       heal.connect(0, log, 0);
       log.connect(0, cleanup, 0);
+      // Data wires, not typed text -- see this sample's header. Spawn Ahead's outputs are ["then"(EVENT),
+      // "guid"], and both consumers declare ["exec"(ACTION), "guid", ...], so slot 1 on each side.
+      spawn.connect(1, face, 1);
+      spawn.connect(1, heal, 1);
     });
 
   // ---- Command a Squad -- adapted from samples/recipes/command_a_squad.lua. Spawn a squad in one call
@@ -110,11 +129,17 @@ window.Samples = (function () {
       var cleanup = node(graph, "ess/triggers/after", [1180, 140], {
         seconds: 8, fn: "function() for _, g in ipairs(__enemies1) do Ess.Object.remove(g) end end"
       });
-      setProp(attack, "guids", "__enemies1"); // matches Spawn Enemies' captured guid-list name -- see file header
       onKey.connect(0, squad, 0);
       squad.connect(0, attack, 0);
       attack.connect(0, toast, 0);
       toast.connect(0, cleanup, 0);
+      // The captured guid LIST, wired rather than typed. Ess.Easy.Spawn.enemies(nCount, opts) returns
+      // { guid, ... } (92_easy_spawn.lua) and Ess.Easy.AIOrders.attack(guids, target) takes that list as its
+      // first argument (60_aiorders_easy.lua) -- so Spawn Enemies' "guids" output (slot 1) goes straight
+      // into AI Orders: Attack's "guids" input (slot 1). No per-unit bookkeeping, and nothing to re-type if
+      // the list ever gets captured under a different name. The cleanup trigger's `fn` still names
+      // __enemies1 as text: it loops over the list inside a deferred closure, which has no pin.
+      squad.connect(1, attack, 1);
     });
 
   // ---- Mark & Notify -- combines samples/recipes/mark_things.lua and notify_the_player.lua: put an
@@ -130,8 +155,10 @@ window.Samples = (function () {
       var toast = node(graph, "ess/toastmessage", [620, 100], { message: "Pickup collected" });
       var banner = node(graph, "ess/hud/banner", [900, 100], { message: "Area Cleared" });
       var objective = node(graph, "ess/hud/objective", [1180, 100], { text: "Reach the LZ", slot: 1 });
-      var radio = node(graph, "ess/hud/radio", [1460, 100], { text: "On my way, over.", hold: 4 });
-      var cleanup = node(graph, "ess/triggers/after", [1460, 320], {
+      // x=1540, not 1460: Hud: Objective's own widgets make it the widest node in this sample (~292px once
+      // nodesize.js fits it to its text), so the old 280px column pitch put this one 12px inside it.
+      var radio = node(graph, "ess/hud/radio", [1540, 100], { text: "On my way, over.", hold: 4 });
+      var cleanup = node(graph, "ess/triggers/after", [1540, 320], {
         seconds: 5, fn: "function() Ess.Mark.clear(__mark1) Ess.Mark.clear(__mark2) Ess.Hud.objective(nil, 1) end"
       });
       onKey.connect(0, markObj, 0);
@@ -157,10 +184,14 @@ window.Samples = (function () {
       var deferred = node(graph, "flow/customcode", [900, 260], {
         code: "Ess.Easy.Triggers.after(5, function() __orbit1() Ess.Object.remove(__spawn1) end)"
       });
-      setProp(orbit, "guid", "__spawn1"); // matches Object: Spawn's captured guid name -- see file header
       onKey.connect(0, spawn, 0);
       spawn.connect(0, orbit, 0);
       orbit.connect(0, deferred, 0);
+      // Ess.Easy.Camera.orbit(uGuid, opts) (51_camera.lua) takes the guid first, so Object: Spawn's "guid"
+      // output (slot 1) wires into Camera Orbit's "guid" input (slot 1). The Custom Code block still names
+      // both captures as text -- it calls the orbit's returned stop() closure from inside a deferred
+      // Triggers.after callback, and neither a closure call nor a delayed body has a pin to wire.
+      spawn.connect(1, orbit, 1);
     });
 
   // ---- Command a Helicopter -- adapted from samples/recipes/command_a_helicopter.lua. Two gotchas the
@@ -177,11 +208,13 @@ window.Samples = (function () {
       var cleanup = node(graph, "ess/triggers/after", [1180, 140], {
         seconds: 10, fn: "function() Ess.Object.remove(__spawn1) end"
       });
-      setProp(flyTo, "uHeli", "__spawn1"); // matches Object: Spawn's captured guid name -- see file header
       onKey.connect(0, spawn, 0);
       spawn.connect(0, flyTo, 0);
       flyTo.connect(0, toast, 0);
       toast.connect(0, cleanup, 0);
+      // Ess.Vehicle.flyTo(uHeli, x, y, z, opts) (12_vehicle.lua) takes the helicopter's guid first, so
+      // Object: Spawn's "guid" output wires into Vehicle: Fly To's "uHeli" input (slot 1 on both).
+      spawn.connect(1, flyTo, 1);
     });
 
   // ---- A Quick Mission -- adapted from samples/recipes/a_quick_mission.lua. A whole linear mission in one
@@ -269,16 +302,25 @@ window.Samples = (function () {
     "On Key Press -> spawn a truck + trailer ahead, make both invincible, then weld the trailer onto the truck's hitch hardpoint (native Object.Attach).",
     function (graph) {
       var onKey = node(graph, "ess/onkeypress", [60, 260], { key: "f10" });
-      var truck = node(graph, "ess/object/spawn", [320, 140], { sTemplate: "Austin (CIV)", x: 12, y: 4, z: 0, yaw: 0 });
-      var trailer = node(graph, "ess/object/spawn", [320, 380], { sTemplate: "Civ Fueltrailer", x: 24, y: 4, z: 0, yaw: 0 });
-      var invincTruck = node(graph, "ess/object/setinvincible", [620, 140], { bOn: true, sReason: "hitch" });
-      var invincTrailer = node(graph, "ess/object/setinvincible", [620, 380], { bOn: true, sReason: "hitch" });
-      var attach = node(graph, "native/object/attach", [900, 260], { sHardpoint: "hp_trailerhitch" });
-      var toast = node(graph, "ess/toastmessage", [1180, 260], { message: "Trailer hitched -- get in the truck and drive, it follows." });
-      setProp(invincTruck, "guid", "__spawn1");   // matches the truck's Object: Spawn captured guid name
-      setProp(invincTrailer, "guid", "__spawn2"); // matches the trailer's Object: Spawn captured guid name
-      setProp(attach, "parentGuid", "__spawn1");
-      setProp(attach, "childGuid", "__spawn2");
+      // Two rows, 310px apart vertically: Object: Spawn carries five widgets and stands ~264px tall, so the
+      // old 240px row pitch had the truck's node running 24px into the trailer's. The Attach/Toast column
+      // sits centred between the two rows rather than aligned to either one.
+      var truck = node(graph, "ess/object/spawn", [320, 110], { sTemplate: "Austin (CIV)", x: 12, y: 4, z: 0, yaw: 0 });
+      var trailer = node(graph, "ess/object/spawn", [320, 420], { sTemplate: "Civ Fueltrailer", x: 24, y: 4, z: 0, yaw: 0 });
+      var invincTruck = node(graph, "ess/object/setinvincible", [620, 110], { bOn: true, sReason: "hitch" });
+      var invincTrailer = node(graph, "ess/object/setinvincible", [620, 420], { bOn: true, sReason: "hitch" });
+      var attach = node(graph, "native/object/attach", [900, 300], { sHardpoint: "hp_trailerhitch" });
+      var toast = node(graph, "ess/toastmessage", [1180, 345], { message: "Trailer hitched -- get in the truck and drive, it follows." });
+      // Two spawns, two captured guids, four consumers -- the sample where hand-typed capture names were
+      // most fragile (every one of these was a __spawn1-vs-__spawn2 ordering assumption waiting to be
+      // invalidated by adding a spawn anywhere earlier) and where wiring pays off most visibly: the graph
+      // now SHOWS which vehicle each call acts on. Ess.Object.setInvincible(uGuid, bOn, sReason)
+      // (11_object.lua) and the native Object.Attach(uParentGuid, sHardpoint, uChildGuid) both take their
+      // guid(s) as wired inputs; Attach's sHardpoint stays a property, since it's a bone name, not a guid.
+      truck.connect(1, invincTruck, 1);
+      trailer.connect(1, invincTrailer, 1);
+      truck.connect(1, attach, 1);     // parentGuid
+      trailer.connect(1, attach, 2);   // childGuid
       onKey.connect(0, truck, 0);
       truck.connect(0, trailer, 0);
       trailer.connect(0, invincTruck, 0);

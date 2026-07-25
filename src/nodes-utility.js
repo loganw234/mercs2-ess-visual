@@ -21,15 +21,34 @@
 (function () {
   "use strict";
 
-  // Resolve a node's input slot exactly like CodeGen.resolveNumberInput does (wired value wins, else the
-  // property default) but without any numeric assumption -- same local twin nodes-markers-camera.js and
-  // nodes-encounter.js each keep for guid/raw-expression inputs (see either file's header for why this
-  // isn't shared centrally through codegen.js).
-  function resolveRawInput(node, slotIndex, propName) {
-    var wired = node.getInputData(slotIndex);
-    if (wired !== undefined && wired !== null && wired !== "") return wired;
-    return node.properties[propName];
-  }
+  // Local alias for CodeGen.resolveInput -- "whatever's wired in, else the node's own property".
+  // This file (and eight others) used to carry its own byte-identical copy of that function, on the
+  // theory that CodeGen's was number-specific; it never was -- the two were the same four lines under
+  // two names. See codegen.js's resolveInput for the naming history. Kept as a local name only so the
+  // call sites below stay short and unchanged.
+  var resolveRawInput = CodeGen.resolveInput;
+
+  // Every key name Ess.Keys itself recognizes -- transcribed from its OWN resolver, the NAMES table in
+  // mercs2-lua-essentials/src/25_keys.lua, which Ess.Keys.vk() looks names up in. An unknown name isn't
+  // silently ignored there (Ess.Keys.on logs "unknown key '...'"), but that log only appears in-game at
+  // runtime, long after the graph that caused it was built -- so a combo that can't produce a bad value in
+  // the first place is still the better shape, same reasoning as nodes-encounter.js's FACTIONS.
+  //
+  // DELIBERATELY NOT the same list as On Key Press's (nodes.js's LOADER_KEYS). That one is resolved by the
+  // OnKey loader's own C-side ResolveKeyName(), this one by Ess in Lua, and they genuinely differ: the
+  // loader accepts "alt", Ess's NAMES table has no entry for it, so offering "alt" here would produce a
+  // binding that silently never fires. Two resolvers, two lists -- not worth collapsing into one.
+  // Ess lowercases the name before lookup (`tostring(key):lower()`), so these are canonical, not required.
+  var ESS_KEYS = (function () {
+    var keys = [];
+    for (var n = 1; n <= 12; n++) keys.push("f" + n);
+    keys = keys.concat(["insert", "delete", "home", "end", "pageup", "pagedown",
+      "space", "enter", "escape", "backspace", "tab",
+      "up", "down", "left", "right", "shift", "ctrl"]);
+    for (var d = 0; d <= 9; d++) keys.push(String(d));
+    for (var c = 97; c <= 122; c++) keys.push(String.fromCharCode(c));
+    return keys;
+  })();
 
   // ============================================================
   // Ess/Console/Open -- Ess.Easy.Console.open(), no args -- browse the full Easy reference, in-game.
@@ -416,8 +435,8 @@
   function KeysOn() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.addProperty("key", "F6");
-    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+    this.addProperty("key", "f6");
+    this.addWidget("combo", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this), { values: ESS_KEYS });
     this.addProperty("call", "Ess.Log('key pressed')");
     this.addWidget("text", "call", this.properties.call, function (v) { this.properties.call = v; }.bind(this));
     this.addOutput("on press", LiteGraph.EVENT);
@@ -450,8 +469,8 @@
   function KeysOff() {
     this.addInput("exec", LiteGraph.ACTION);
     this.addOutput("then", LiteGraph.EVENT);
-    this.addProperty("key", "F6");
-    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+    this.addProperty("key", "f6");
+    this.addWidget("combo", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this), { values: ESS_KEYS });
   }
   KeysOff.title = "Keys: Off";
   KeysOff.desc = "Ess.Keys.off(key)";
@@ -482,8 +501,8 @@
   // this repo follows (e.g. Object: Alive).
   // ============================================================
   function KeysIsBound() {
-    this.addProperty("key", "F6");
-    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+    this.addProperty("key", "f6");
+    this.addWidget("combo", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this), { values: ESS_KEYS });
     this.addOutput("bound", "string");
   }
   KeysIsBound.title = "Keys: Is Bound";

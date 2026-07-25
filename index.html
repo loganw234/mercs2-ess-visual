@@ -29,9 +29,16 @@
     <button id="btnRedo" disabled title="Redo (Ctrl+Y)">Redo</button>
   </div>
   <div class="topbar-group">
+    <button id="btnFit" title="Zoom and pan so the whole graph fits on screen (shortcut: F)">Fit to View</button>
     <button id="btnNewGroup" title="Select the nodes you want to label (drag a box around them, or shift-click each one), then click this to wrap them in a titled, colored box -- e.g. one box per function block, for a graph meant to teach.">New Group</button>
   </div>
   <p class="topbar-hint">Autosaves to this browser as you work -- Save Graph is for a portable file.</p>
+</div>
+<div class="banner" id="restoreBanner" hidden>
+  <span id="restoreBannerText">Picked up where you left off -- this is the graph you had open last time.</span>
+  <button id="btnUseSample">Start from a sample instead</button>
+  <button id="btnUndoRestore" hidden>Bring my graph back</button>
+  <button id="btnDismissBanner" class="ghost">Dismiss</button>
 </div>
 <div class="app">
   <div class="library">
@@ -47,7 +54,8 @@
       <p>Right-click empty canvas for the same list. Drag from a node's dot to wire it. Click a node below
         to drop it onto the canvas.</p>
       <p><b>Shortcuts:</b> Del removes the selection. Ctrl+C / Ctrl+V copy and paste (also how you
-        duplicate a node). Ctrl+A selects all. Ctrl+Z / Ctrl+Y undo and redo.</p>
+        duplicate a node). Ctrl+A selects all. Ctrl+Z / Ctrl+Y undo and redo. F fits the graph on screen.
+        <b>Double-click empty canvas</b> to search every node by name.</p>
     </div>
     <div id="palette"></div>
   </div>
@@ -59,6 +67,12 @@
       <label for="sampleSelect">Load a boilerplate sample</label>
       <select id="sampleSelect"></select>
       <p class="hint" id="sampleHint"></p>
+    </div>
+    <div class="samples">
+      <label for="scriptName">Script name</label>
+      <input type="text" id="scriptName" value="GraphOutput" spellcheck="false" autocomplete="off">
+      <p class="hint">Downloads as <code>&lt;name&gt;.lua</code>. Put it in your game folder's
+        <code>scripts/OnKey/</code>, load a save, then press the key set on the On Key Press node.</p>
     </div>
     <div class="actions">
       <button id="btnCompile">Compile</button>
@@ -72,6 +86,7 @@
 
 <script src="lib/litegraph.js"></script>
 <script src="src/widgetsync.js"></script>
+<script src="src/nodesize.js"></script>
 <script src="src/codegen.js"></script>
 <script src="src/nodes.js"></script>
 <script src="src/nodes-world.js"></script>

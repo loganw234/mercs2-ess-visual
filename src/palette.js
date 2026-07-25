@@ -41,9 +41,16 @@
 
   // ---- 2. colorize -------------------------------------------------------------------------------------
   var CATEGORY_LABELS = { aiorders: "AI Orders", ui: "UI", mark: "Markers" };
+  // The bucket for flat, un-namespaced types ("ess/givecash") is exactly the five original nodes -- On Key
+  // Press, Give Cash, Toast Message, Spawn Ahead, Random Number -- which happen to be the right five to
+  // meet first: a trigger, two one-liner actions, one that captures a value, and one pure-data node. It's
+  // also the only category rendered open by default. "General" described where they came from (no
+  // sub-namespace) rather than what they're for, and gave someone opening a 40-category sidebar no reason
+  // to look there first.
+  var ROOT_CATEGORY = "Start here";
   function categoryLabel(tier, seg) {
     if (tier === "flow") return "Flow Control";
-    var base = seg ? (CATEGORY_LABELS[seg] || (seg.charAt(0).toUpperCase() + seg.slice(1))) : "General";
+    var base = seg ? (CATEGORY_LABELS[seg] || (seg.charAt(0).toUpperCase() + seg.slice(1))) : ROOT_CATEGORY;
     return tier === "native" ? "Native: " + base : base;
   }
 
@@ -71,7 +78,7 @@
   // brand-new node file introducing an uncategorized segment) is left with litegraph's plain default
   // color rather than erroring -- see the `if (!group) return;` guard in colorize() below.
   var CATEGORY_GROUP = {
-    "World": "worldSpawn", "Spawn": "worldSpawn", "Object": "worldSpawn", "General": "worldSpawn",
+    "World": "worldSpawn", "Spawn": "worldSpawn", "Object": "worldSpawn", "Start here": "worldSpawn",
     "Player": "playerHuman", "Human": "playerHuman", "Debug": "playerHuman", "Fun": "playerHuman",
     "Vehicle": "vehicle",
     "AI Orders": "encounterAI", "Relations": "encounterAI", "Support": "encounterAI", "Followers": "encounterAI", "Squad": "encounterAI",
@@ -121,8 +128,8 @@
     function recomputeCategories() {
       byCat = collectCategories();
       catNames = Object.keys(byCat).sort(function (a, b) {
-        if (a === "General") return -1;
-        if (b === "General") return 1;
+        if (a === ROOT_CATEGORY) return -1;
+        if (b === ROOT_CATEGORY) return 1;
         return a < b ? -1 : a > b ? 1 : 0;
       });
       var total = 0;
@@ -152,7 +159,7 @@
         if (!items.length) return;
 
         var details = document.createElement("details");
-        details.open = !!q || cat === "General";
+        details.open = !!q || cat === ROOT_CATEGORY;
 
         var summary = document.createElement("summary");
         summary.textContent = cat + " (" + items.length + ")";

@@ -28,6 +28,7 @@ window.GraphIO = (function () {
   "use strict";
 
   var AUTOSAVE_KEY = "essvisual_autosave_v1";
+  var AUTOSAVE_BACKUP_KEY = "essvisual_autosave_prev_v1";
   var UNDO_LIMIT = 50;
 
   function restoreGraph(graph, jsonString, rescanFn) {
@@ -51,6 +52,26 @@ window.GraphIO = (function () {
   }
   function clearAutosave() {
     try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) { /* nothing to do if storage is unavailable */ }
+  }
+
+  // ---- one-deep undo for the autosave itself.
+  //
+  // The autosave used to be genuinely destroyable by a single misclick: the restore prompt on load was a
+  // window.confirm, Cancel loaded the default sample instead, and the first edit after that overwrote the
+  // autosave with the sample -- so "Cancel" silently threw away however long you'd spent on the previous
+  // graph, with no undo (the undo stack is seeded fresh on load) and no file unless you'd hit Save Graph.
+  // app.js no longer asks on load at all (it just restores), but anything that DELIBERATELY replaces a
+  // restored graph calls backupAutosave() first, so there's still one step back. Deliberately one deep and
+  // deliberately not surfaced anywhere except the banner that writes it -- this is a safety net for a
+  // specific misclick, not a second save system. Save Graph remains the real backup.
+  function backupAutosave() {
+    try {
+      var current = localStorage.getItem(AUTOSAVE_KEY);
+      if (current) localStorage.setItem(AUTOSAVE_BACKUP_KEY, current);
+    } catch (e) { /* same convenience-only contract as scheduleAutosave */ }
+  }
+  function readAutosaveBackup() {
+    try { return localStorage.getItem(AUTOSAVE_BACKUP_KEY); } catch (e) { return null; }
   }
 
   // ---- undo/redo: a plain stack of serialized snapshots, not a diff/patch system -- simple, and a modest
@@ -134,6 +155,8 @@ window.GraphIO = (function () {
     scheduleAutosave: scheduleAutosave,
     readAutosave: readAutosave,
     clearAutosave: clearAutosave,
+    backupAutosave: backupAutosave,
+    readAutosaveBackup: readAutosaveBackup,
     createUndoStack: createUndoStack
   };
 })();

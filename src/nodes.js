@@ -13,6 +13,35 @@
 (function () {
   "use strict";
 
+  // Every key name the OnKey loader actually recognizes, and nothing else.
+  //
+  // Sourced from the loader's own resolver rather than the wiki or guesswork: ResolveKeyName() in
+  // Merc2Reborn's mod-ports/mercs2-qol-mods/lua-bridge/lua_bridge.c is what turns this script's KEYVAL
+  // into a Windows virtual-key code, and anything it doesn't recognize returns 0 -- meaning the script
+  // loads fine and simply never binds to anything. A free-text widget made that failure invisible: no
+  // error at compile time, no error at load time, just a hotkey that does nothing. Same reasoning (and
+  // same fix) as nodes-encounter.js's FACTIONS combo -- make the bad value unreachable rather than merely
+  // undocumented.
+  //
+  // Ordered by what a mod script actually reaches for (F-keys first -- every demo in Ess's own samples/
+  // folder uses one), not alphabetically. The loader also accepts "return"/"esc"/"control" as aliases for
+  // enter/escape/ctrl; only one spelling of each is offered here, since two entries that do the same thing
+  // is a choice a beginner shouldn't have to think about. Matching is case-insensitive on the loader side
+  // (_stricmp), so these lowercase values are canonical, not required.
+  //
+  // NOTE: this is NOT the same list as Ess.Keys' own (see nodes-utility.js) -- that one is resolved by
+  // Ess's NAMES table in src/25_keys.lua, which has no "alt". Different layer, different resolver.
+  var LOADER_KEYS = (function () {
+    var keys = [];
+    for (var n = 1; n <= 12; n++) keys.push("f" + n);
+    keys = keys.concat(["insert", "delete", "home", "end", "pageup", "pagedown",
+      "space", "enter", "escape", "backspace", "tab",
+      "up", "down", "left", "right", "shift", "ctrl", "alt"]);
+    for (var d = 0; d <= 9; d++) keys.push(String(d));
+    for (var c = 97; c <= 122; c++) keys.push(String.fromCharCode(c));
+    return keys;
+  })();
+
   // ============================================================
   // Ess/OnKeyPress -- the one trigger node in this draft. Compiling walks from every node with
   // isTriggerNode === true, firing its output once. See compiler.js.
@@ -20,12 +49,19 @@
   function OnKeyPress() {
     this.addOutput("then", LiteGraph.EVENT);
     this.addProperty("key", "insert");
-    this.addWidget("text", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this));
+    this.addWidget("combo", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this), { values: LOADER_KEYS });
     this.size = [180, 60];
-    this.color = "#2a4d3a";
+    // The script's entry point, and the one node that deliberately belongs to no category -- so it gets a
+    // notably BRIGHTER, more saturated green than anything in palette.js's 16 group colors, all of which
+    // sit in the same dark/desaturated band. The previous value (#2d5a3d) was three points per channel off
+    // the World & Spawn group's own green, which meant "distinct entry-point marker" was true in the source
+    // and invisible on canvas -- On Key Press looked like just another Spawn node. Instance .color/.bgcolor
+    // win over the constructor colors colorize() stamps on (see palette.js's header).
+    this.color = "#12a463";
+    this.bgcolor = "#0d2e1e";
   }
   OnKeyPress.title = "On Key Press";
-  OnKeyPress.desc = "Root trigger for an OnKey script -- fires once per compile, walking the chain below it.";
+  OnKeyPress.desc = "Root trigger for an OnKey script -- fires once per compile, walking the chain below it. `key` is the hotkey the OnKey loader binds this script to.";
   OnKeyPress.isTriggerNode = true;
   OnKeyPress.prototype.fireOnce = function () { this.triggerSlot(0); };
   LiteGraph.registerNodeType("ess/onkeypress", OnKeyPress);
