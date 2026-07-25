@@ -97,18 +97,49 @@ window.CodeGen = (function () {
   // Turn arbitrary widget text into a Lua single-quoted string literal. Never string-concatenate user
   // text straight into generated code -- an apostrophe in a template name or message would otherwise
   // silently corrupt the generated chunk (same rule as mercs2-webtool-template's luaStringLiteral).
+  //
+  // \r is escaped alongside \n, not just \n: Lua's own lexer treats a bare CR as a newline exactly like LF
+  // (llex.c's currIsNewline checks for both), so a Windows-newline paste into any widget -- where \n got
+  // escaped but the \r in front of it didn't -- ended the literal early and failed the whole chunk with
+  // "unfinished string". Escaping only one half of a CRLF pair is worse than escaping neither.
   function luaString(s) {
-    return "'" + String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n") + "'";
+    return "'" + String(s == null ? "" : s)
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/\r/g, "\\r")
+      .replace(/\n/g, "\\n") + "'";
   }
 
-  // Resolve a node's input slot: whatever's wired in, else its property value formatted for Lua.
-  // For NUMBER-typed properties the raw value is used as-is (a Lua expression or a number); for anything
-  // else it's treated as a string literal. This mirrors litegraph's own "connected wire overrides widget"
-  // convention (getInputData returns undefined when nothing's wired).
-  function resolveNumberInput(node, slotIndex, propName) {
+  // Resolve a node's input slot: whatever's wired into it, else the node's own property value. Mirrors
+  // litegraph's "a connected wire overrides the widget" convention -- getInputData returns undefined when
+  // nothing's connected, and an unwritten link reads null (compile() clears them all before each run).
+  //
+  // The result is spliced UNQUOTED wherever it's used -- it's Lua source text either way, whether that's a
+  // number, an expression, a guid, or a table literal (see this file's header on the "data is Lua source
+  // text" model). If a value needs to end up as a Lua STRING, its node calls luaString on it explicitly;
+  // this helper never quotes anything.
+  //
+  // NAMING: `resolveNumberInput` is the original name from when only Random Number -> Spawn Ahead's
+  // distance existed, and roughly 600 call sites still use it, so it stays as an alias rather than
+  // churning every node file. It never had any number-specific behavior -- an earlier version of this
+  // comment claimed it treated non-number properties as string literals, which the code has never done.
+  // `resolveInput` is the name to use in new code. Nine node files each carried a byte-identical private
+  // copy of this function called `resolveRawInput` -- an artifact of that misleading name -- and now just
+  // bind their local name straight to this one.
+  function resolveInput(node, slotIndex, propName) {
     var wired = node.getInputData(slotIndex);
     if (wired !== undefined && wired !== null && wired !== "") return wired;
     return node.properties[propName];
+  }
+
+  // Parse a comma-separated declaration list ("targetGuid, amount") into trimmed, non-empty names. Used by
+  // Function Start/Return's params/returns widgets (nodes-function.js), the dynamically-generated Call node
+  // types built from them (nodes-function-calls.js), and compile()'s returns-mismatch guardrail
+  // (compiler.js) -- all three parse the SAME user-typed text, and all three had their own identical copy.
+  // Three copies of one splitter is three chances for them to disagree about what an empty entry means,
+  // which is exactly the sort of drift that turns into a wrong-shaped function signature.
+  function splitNames(text) {
+    return String(text || "").split(",").map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
   }
 
   // The root scope -- by the time compile() calls this, every pushScope() a node made during the trigger
@@ -117,7 +148,9 @@ window.CodeGen = (function () {
   function getLines() { return stack[0].slice(); }
 
   return {
-    reset: reset, emit: emit, luaString: luaString, resolveNumberInput: resolveNumberInput, getLines: getLines,
+    reset: reset, emit: emit, luaString: luaString, getLines: getLines,
+    resolveInput: resolveInput, resolveNumberInput: resolveInput,   // same function, see resolveInput's comment
+    splitNames: splitNames,
     emitNative: emitNative, emitNativeCapture: emitNativeCapture,
     pushScope: pushScope, popScope: popScope, emitLines: emitLines, newLocal: newLocal, emitCapture: emitCapture
   };
