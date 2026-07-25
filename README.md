@@ -287,7 +287,7 @@ A pure-data node (no exec pins at all, like `Random Number`) just needs `onExecu
 ## Node coverage
 
 `src/nodes.js` (the original 5: On Key Press, Give Cash, Toast Message, Spawn Ahead, Random Number) plus
-eleven namespace-grouped files added across four later passes, **182 nodes total** — every `Ess.Easy.*`
+eleven namespace-grouped files added across four later passes, **183 nodes total** — every `Ess.Easy.*`
 function has a node (two narrow, documented exceptions below), plus a wide slice of the **Core** tier
 (the direct `Ess.*` namespaces, not just their `Easy` wrappers) for the namespaces modders touch most:
 
@@ -419,7 +419,7 @@ encounter & AI, missions, presentation, utility), one warm-toned shade per Nativ
 accent for Flow Control. `On Key Press` is the one exception, keeping its own distinct green set directly
 on the instance — a one-off entry-point marker, not a category.
 
-**Grand total: 392 static node types** (182 Ess + 193 Native + 17 Flow Control), plus one dynamically-
+**Grand total: 393 static node types** (183 Ess + 193 Native + 17 Flow Control), plus one dynamically-
 generated Call node per function you define (see "Function blocks" above).
 
 ## What's deliberately not here yet

@@ -109,6 +109,31 @@
   LiteGraph.registerNodeType("ess/followers/orderguard", FollowersOrderGuard);
 
   // ============================================================
+  // Ess/Followers/OrderEnter -- Ess.Easy.Followers.orderEnter(vehicleGuid, role). CONFIRMED LIVE: no
+  // secondary "which guid is currently driving which vehicle" tracking needed -- a follower who's currently
+  // driving IS already the correct AIGuid for a LATER Followers: Order node to steer the vehicle through
+  // (Ess.Raw.AIOrders.actor() already targets the driver, not the hull). role defaults to "driver" for
+  // exactly that reason; pick "passenger"/"gunner" for a follower riding along instead of driving.
+  // ============================================================
+  function FollowersOrderEnter() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("vehicle", "string");
+    this.addProperty("vehicle", "Ess.Player.inVehicle(0)");
+    this.addWidget("text", "vehicle", this.properties.vehicle, function (v) { this.properties.vehicle = v; }.bind(this));
+    this.addProperty("role", "driver");
+    this.addWidget("combo", "role", this.properties.role, function (v) { this.properties.role = v; }.bind(this), { values: ["driver", "passenger", "gunner"] });
+  }
+  FollowersOrderEnter.title = "Followers: Order Enter";
+  FollowersOrderEnter.desc = "Ess.Easy.Followers.orderEnter(vehicle, role) -- commands the whole current roster to board a vehicle. role=\"driver\" (the default) is what keeps a LATER order working through the same guid -- see node comment.";
+  FollowersOrderEnter.prototype.onAction = function () {
+    var vehicle = CodeGen.resolveNumberInput(this, 1, "vehicle");
+    CodeGen.emit("Ess.Easy.Followers.orderEnter(" + vehicle + ", " + CodeGen.luaString(this.properties.role) + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("ess/followers/orderenter", FollowersOrderEnter);
+
+  // ============================================================
   // Ess/Followers/OrderFollow -- Ess.Followers.order("follow", {target=}) -- puts the whole current roster
   // back into regular Follow (auto-holds distance, rides along in vehicles) after a guard/patrol/attack
   // order. Guard/hold/a looping patrol have no natural "done" (see the Lua module's own header) -- this is
