@@ -305,10 +305,13 @@
   LiteGraph.registerNodeType("ess/triggers/after", TriggerAfter);
 
   // ============================================================
-  // Ess/Loop/Start -- Ess.Loop.start(id, interval, tickFn). tickFn is a Lua closure, modeled as raw
-  // Lua-source text same as every other callback param here -- returning `true` keeps the loop going,
-  // `false`/nil auto-stops it (see mercs2-lua-essentials/src/20_loop.lua for the full API, including the
-  // stats()/list() introspection this exact framework's Loop Monitor tooling was built around).
+  // Ess/Loop/Start -- Ess.Loop.start(id, interval, tickFn). TWO ways to say what happens each tick, same
+  // precedence as Keys: On (see that node's own header): wire "on tick" to a real exec chain -- captured via
+  // the same pushScope()/popScope() mechanism, wrapped in `function() ... return true end` at emit time (the
+  // trailing `return true` is added FOR you, since a wired chain has no natural "return" of its own and
+  // Ess.Loop.start stops the loop the moment a tick returns anything falsy -- see
+  // mercs2-lua-essentials/src/20_loop.lua). Leave "on tick" unwired and the raw-text `tickFn` fallback below
+  // applies instead (own responsibility for its own `return true`/`false`, same as before this existed).
   // ============================================================
   var DEFAULT_TICK_FN = "function() Ess.Log('tick') return true end";
 
@@ -322,13 +325,26 @@
     this.addWidget("number", "interval", this.properties.interval, function (v) { this.properties.interval = v; }.bind(this));
     this.addProperty("tickFn", DEFAULT_TICK_FN);
     this.addWidget("text", "tickFn", this.properties.tickFn, function (v) { this.properties.tickFn = v; }.bind(this));
-    this.size = [220, 100];
+    this.addOutput("on tick", LiteGraph.EVENT);
+    this.size = [220, 120];
   }
   LoopStart.title = "Loop: Start";
-  LoopStart.desc = "Ess.Loop.start(id, interval, tickFn) -- tickFn is raw Lua function-literal text, see file header";
+  LoopStart.desc = "Ess.Loop.start(id, interval, tickFn) -- wire \"on tick\" for a real exec chain each tick (preferred, see file header); the raw-text tickFn is only used when nothing's wired there.";
   LoopStart.prototype.onAction = function () {
     var interval = CodeGen.resolveNumberInput(this, 1, "interval");  // input 0 is "exec"
-    CodeGen.emit("Ess.Loop.start(" + CodeGen.luaString(this.properties.id) + ", " + interval + ", " + this.properties.tickFn + ")");
+    var onTickSlot = this.outputs[1];
+    var isWired = onTickSlot && onTickSlot.links && onTickSlot.links.length > 0;
+    if (isWired) {
+      CodeGen.pushScope();
+      this.triggerSlot(1);
+      var bodyLines = CodeGen.popScope();
+      CodeGen.emit("Ess.Loop.start(" + CodeGen.luaString(this.properties.id) + ", " + interval + ", function()");
+      CodeGen.emitLines(bodyLines);
+      CodeGen.emit("return true");
+      CodeGen.emit("end)");
+    } else {
+      CodeGen.emit("Ess.Loop.start(" + CodeGen.luaString(this.properties.id) + ", " + interval + ", " + this.properties.tickFn + ")");
+    }
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/loop/start", LoopStart);
@@ -349,6 +365,30 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("ess/loop/stop", LoopStop);
+
+  // ============================================================
+  // Ess/Input/IsKeyHeld -- pure data. Ess.Input.held(vk) -> is this key down RIGHT NOW (no buffer drain,
+  // safe to call from any number of loops at once -- see src/21_input.lua). DIFFERENT from Keys: On's own
+  // key-name convention (that's an edge-triggered PRESS via Ess.Keys/Loader's own named-key strings) --
+  // this is a raw Win32 virtual-key CODE read via GetKeyboardState, a separate lower-level system, so it
+  // takes its own combo of the common modifier/whitespace keys rather than reusing Keys: On's string names.
+  // A combo (not a free-text VK number) makes a typo'd/out-of-range code unreachable, same reasoning as
+  // nodes-encounter.js's FACTIONS combo. Outputs "string" (a raw boolean-expression, the same convention
+  // Compare/And/Or/Not use) so it wires directly into Branch's condition -- no separate Compare needed.
+  // ============================================================
+  var VK_KEYS = { "Shift": 0x10, "Ctrl": 0x11, "Alt": 0x12, "Space": 0x20, "Enter": 0x0D, "Tab": 0x09, "Escape": 0x1B };
+  function InputIsKeyHeld() {
+    this.addProperty("key", "Shift");
+    this.addWidget("combo", "key", this.properties.key, function (v) { this.properties.key = v; }.bind(this), { values: Object.keys(VK_KEYS) });
+    this.addOutput("held", "string");
+  }
+  InputIsKeyHeld.title = "Input: Is Key Held";
+  InputIsKeyHeld.desc = "Ess.Input.held(vk) -- is this key down right now (not an edge-triggered press) -- e.g. gate a Loop: Start tick on \"is Shift held\" for a hold-to-do-something effect.";
+  InputIsKeyHeld.prototype.onExecute = function () {
+    var vk = VK_KEYS[this.properties.key] || VK_KEYS.Shift;
+    this.setOutputData(0, "Ess.Input.held(0x" + vk.toString(16).toUpperCase() + ")");
+  };
+  LiteGraph.registerNodeType("ess/input/iskeyheld", InputIsKeyHeld);
 
   // ============================================================
   // Ess/Keys -- a whole PANEL of hotkeys inside ONE script, decoupled from the file-level KEYVAL/OnKey
