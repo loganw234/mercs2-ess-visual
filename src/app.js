@@ -58,6 +58,44 @@
   btnUndo.addEventListener("click", function () { undoStack.undo(); });
   btnRedo.addEventListener("click", function () { undoStack.redo(); });
 
+  // ---- New Group: litegraph's own "Add Group" (right-click empty canvas) drops an unlabeled 140x80 gray
+  // box wherever you clicked -- real, but undiscoverable and unhelpful for what this is actually for here:
+  // visually fencing off one function block (or the main chain) with a title, for a graph meant to teach.
+  // This button asks for a title UP FRONT and sizes/positions the box around whatever's currently selected,
+  // so "select a function's nodes, click New Group, name it" is the whole workflow. Recoloring, renaming, and
+  // resizing an existing group afterward are all litegraph's own built-ins (right-click a group -> Edit Group),
+  // not reimplemented here -- this button only fixes the ONE real gap, creating a well-formed one to start. ----
+  var btnNewGroup = document.getElementById("btnNewGroup");
+  btnNewGroup.addEventListener("click", function () {
+    var selected = canvas.selected_nodes || {};
+    var ids = Object.keys(selected);
+    if (!ids.length) {
+      alert("Select the nodes you want to label first -- drag a box around them, or shift-click each one -- then click New Group.");
+      return;
+    }
+    var title = window.prompt("Group title:", "");
+    if (title === null) return; // cancelled
+    title = title.trim() || "Group";
+
+    var PAD = 30, PAD_TOP = 50; // extra top padding clears the title text (group font_size defaults to 24)
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    ids.forEach(function (id) {
+      var b = selected[id].getBounding();
+      minX = Math.min(minX, b[0]);
+      minY = Math.min(minY, b[1]);
+      maxX = Math.max(maxX, b[0] + b[2]);
+      maxY = Math.max(maxY, b[1] + b[3]);
+    });
+
+    var group = new LGraphGroup(title);
+    group.pos = [minX - PAD, minY - PAD_TOP];
+    group.size = [(maxX - minX) + PAD * 2, (maxY - minY) + PAD_TOP + PAD];
+    group.color = LGraphCanvas.node_colors.pale_blue.groupcolor; // a real default, not litegraph's flat gray -- still one of the stock Edit Group > Color presets, so recoloring later stays consistent
+    graph.add(group);
+    group.recomputeInsideNodes();
+    graph.setDirtyCanvas(true, true);
+  });
+
   // Litegraph's own key handler (LGraphCanvas.prototype.processKey) already covers Ctrl+C/V/A and Delete
   // -- see README's "Node colors"-adjacent UX section for the full list -- but has no undo/redo of its
   // own, so this is a separate listener rather than an extension of that one.

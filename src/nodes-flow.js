@@ -268,4 +268,67 @@
     this.triggerSlot(0);
   };
   LiteGraph.registerNodeType("flow/combinecoords", CombineCoordinates);
+
+  // ============================================================
+  // Flow/OffsetNumber -- value + by. Same job as the pure-data Number: Add above, but an ACTION node (exec
+  // in, exec out) for the same reason Combine Coordinates is: it's meant to sit directly after a capturing
+  // node (Player: Get Position, Spawn's guid, ...) in that node's OWN exec chain and read its output the
+  // moment it's set, rather than racing compiler.js's flat pre-pass -- see codegen.js's "ORDERING CAVEAT"
+  // and Combine Coordinates' own comment above for the full reasoning. Kept separate from Number: Add
+  // itself (rather than giving every arithmetic node optional exec pins) so the pure-data nodes keep their
+  // simple "wire two operands, get an expression" shape for the many existing chains that don't need exec
+  // ordering at all (e.g. Compare/And/Or feeding Branch).
+  // ============================================================
+  function OffsetNumber() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    this.addInput("value", "number");
+    this.addProperty("value", 0);
+    this.addWidget("number", "value", this.properties.value, function (v) { this.properties.value = v; }.bind(this));
+    this.addInput("by", "number");
+    this.addProperty("by", 0);
+    this.addWidget("number", "by", this.properties.by, function (v) { this.properties.by = v; }.bind(this));
+    this.addOutput("result", "number");
+  }
+  OffsetNumber.title = "Offset Number";
+  OffsetNumber.desc = "value + by -- e.g. offset a spawn point from a captured player position. An ACTION node so it's safe to wire right after a capturing node in the same exec chain -- see node comment for why (same reasoning as Combine Coordinates).";
+  OffsetNumber.prototype.onAction = function () {
+    var value = CodeGen.resolveNumberInput(this, 1, "value");
+    var by = CodeGen.resolveNumberInput(this, 2, "by");
+    this.setOutputData(1, "(" + value + " + " + by + ")");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("flow/offsetnumber", OffsetNumber);
+
+  // ============================================================
+  // Flow/CombineList4 -- { a, b, c, d }, combining four raw expressions (guids, numbers, anything) into one
+  // Lua table literal -- e.g. four individually-captured Spawn guids into the list an AI Orders node's
+  // `guids` argument expects. Fixed at exactly four slots (this draft's list-shaped-parameter story is
+  // still "type the table literal by hand" everywhere else -- see README's "What's deliberately not here
+  // yet"; a real variable-arity list-builder is a nicer next step than hand-typing). An ACTION node for the
+  // same ordering reason as Combine Coordinates/Offset Number above: each captured guid is only valid once
+  // its OWN capturing node (e.g. Spawn) has actually run, so this needs to sit later in the same exec chain,
+  // not in the pure-data pre-pass.
+  // ============================================================
+  function CombineList4() {
+    this.addInput("exec", LiteGraph.ACTION);
+    this.addOutput("then", LiteGraph.EVENT);
+    ["a", "b", "c", "d"].forEach(function (n) {
+      this.addInput(n, "string");
+      this.addProperty(n, "nil");
+      this.addWidget("text", n, this.properties[n], function (v) { this.properties[n] = v; }.bind(this));
+    }, this);
+    this.addOutput("list", "string");
+  }
+  CombineList4.title = "Combine List (4)";
+  CombineList4.desc = "{ a, b, c, d } -- combines four expressions (guids, numbers, anything) into one Lua table literal. Leave a slot at its \"nil\" default if you have fewer than four real values.";
+  CombineList4.prototype.onAction = function () {
+    var a = CodeGen.resolveNumberInput(this, 1, "a");
+    var b = CodeGen.resolveNumberInput(this, 2, "b");
+    var c = CodeGen.resolveNumberInput(this, 3, "c");
+    var d = CodeGen.resolveNumberInput(this, 4, "d");
+    this.setOutputData(1, "{ " + a + ", " + b + ", " + c + ", " + d + " }");
+    this.triggerSlot(0);
+  };
+  LiteGraph.registerNodeType("flow/combinelist4", CombineList4);
 })();
