@@ -1,0 +1,14 @@
+# Line endings. Everything this repo actually authors is text and normalizes to LF, in the repo AND in the
+# working tree, regardless of whether a contributor has core.autocrlf set. Without this, src/ was already
+# drifting: nodes-encounter.js had been committed with CRLF while every other source file was LF, which
+# makes a whole-file diff out of a one-line change and quietly breaks any tool that splits on "\n".
+* text=auto eol=lf
+
+# Vendored, byte-identical to upstream (see README's "Credit") -- the whole point is that these can be
+# re-vendored from jagenjo/litegraph.js and mercs2-tools-shared without a diff. -text tells git to store
+# them exactly as they arrived and never normalize anything, including litegraph.js's own mixed endings.
+lib/litegraph.js       -text
+lib/litegraph.css      -text
+lib/LITEGRAPH-LICENSE.txt -text
+lib/bridge-client.js   -text
+lib/tokens.css         -text
