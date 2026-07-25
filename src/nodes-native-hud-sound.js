@@ -79,16 +79,12 @@
 (function () {
   "use strict";
 
-  // Resolve a node's input slot exactly like CodeGen.resolveNumberInput does (wired value wins, else the
-  // property default) but without any numeric assumption -- used both for guid/raw-expression inputs
-  // (spliced raw) and as the pre-quote step for plain string inputs (caller applies CodeGen.luaString
-  // itself). Copied locally rather than centralized in codegen.js -- see nodes-hud-sound.js's header for
-  // why this helper is intentionally duplicated per-file in this repo.
-  function resolveRawInput(node, slotIndex, propName) {
-    var wired = node.getInputData(slotIndex);
-    if (wired !== undefined && wired !== null && wired !== "") return wired;
-    return node.properties[propName];
-  }
+  // Local alias for CodeGen.resolveInput -- "whatever's wired in, else the node's own property".
+  // This file (and eight others) used to carry its own byte-identical copy of that function, on the
+  // theory that CodeGen's was number-specific; it never was -- the two were the same four lines under
+  // two names. See codegen.js's resolveInput for the naming history. Kept as a local name only so the
+  // call sites below stay short and unchanged.
+  var resolveRawInput = CodeGen.resolveInput;
 
   // ============================================================================================
   // HUD -- MessageBox

@@ -50,16 +50,12 @@
 (function () {
   "use strict";
 
-  // Resolve a node's input slot exactly like CodeGen.resolveNumberInput does (wired value wins, else the
-  // property default) but without any numeric assumption -- used for guid/table-literal EXPRESSION inputs
-  // (spliced raw, never through CodeGen.luaString). Local per-file twin, same pattern every other
-  // nodes-*.js file in this repo keeps (see nodes-human-vehicle.js's own header for why this isn't shared
-  // centrally through codegen.js).
-  function resolveRawInput(node, slotIndex, propName) {
-    var wired = node.getInputData(slotIndex);
-    if (wired !== undefined && wired !== null && wired !== "") return wired;
-    return node.properties[propName];
-  }
+  // Local alias for CodeGen.resolveInput -- "whatever's wired in, else the node's own property".
+  // This file (and eight others) used to carry its own byte-identical copy of that function, on the
+  // theory that CodeGen's was number-specific; it never was -- the two were the same four lines under
+  // two names. See codegen.js's resolveInput for the naming history. Kept as a local name only so the
+  // call sites below stay short and unchanged.
+  var resolveRawInput = CodeGen.resolveInput;
 
   // ============================================================================================
   // VEHICLE -- Seats & Riders

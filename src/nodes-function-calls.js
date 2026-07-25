@@ -23,9 +23,8 @@ window.FunctionCalls = (function () {
   var FLOW_COLOR = "#1a5a6b";
   var FLOW_BGCOLOR = "#0c2a32";
 
-  function splitNames(text) {
-    return String(text || "").split(",").map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
-  }
+  // Shared with the other two files that parse the same params/returns text -- see codegen.js.
+  var splitNames = CodeGen.splitNames;
 
   function sanitize(name) {
     return String(name || "").trim().replace(/[^A-Za-z0-9_]/g, "_");

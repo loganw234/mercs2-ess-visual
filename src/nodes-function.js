@@ -30,9 +30,8 @@
 (function () {
   "use strict";
 
-  function splitNames(text) {
-    return String(text || "").split(",").map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
-  }
+  // Shared with the other two files that parse the same params/returns text -- see codegen.js.
+  var splitNames = CodeGen.splitNames;
 
   // ============================================================
   // Flow/FunctionStart -- the entry point of a user-defined function's own exec chain, compiled separately
