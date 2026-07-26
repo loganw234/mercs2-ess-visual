@@ -8,6 +8,8 @@ on, vendored here (MIT) rather than pulled in as a live dependency.
 **Status: draft / proof of concept.** Small on purpose — see [What's not here yet](#whats-not-here-yet)
 before extending it.
 
+![The node canvas with the "Spawn & Control" sample loaded: node library on the left, wired graph in the middle, compiled Lua on the right](docs/screenshots/graph.png)
+
 ## Quick start
 
 Live at **[visual.mercs2.tools](https://visual.mercs2.tools)**. To run it locally: no build step, no
