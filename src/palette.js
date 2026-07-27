@@ -33,7 +33,11 @@
   "use strict";
 
   // ---- 1. trim ---------------------------------------------------------------------------------------
-  var KEEP_PREFIXES = ["ess/", "native/", "flow/"];
+  // "essgen/" is the VENDORED generated tier (vendor/ess-nodes.generated.js -- see vendor.json). It has to
+  // be listed here or every one of its ~500 nodes is unregistered on load, silently: no error, no warning,
+  // just a palette that looks exactly as it did before. src/essgen-dedupe.js has already run by this point
+  // and removed the ones a hand-written ess/ node covers, so what survives here is only the gap-fill.
+  var KEEP_PREFIXES = ["ess/", "native/", "flow/", "essgen/"];
   Object.keys(LiteGraph.registered_node_types).forEach(function (type) {
     var keep = KEEP_PREFIXES.some(function (p) { return type.indexOf(p) === 0; });
     if (!keep) LiteGraph.unregisterNodeType(type);
@@ -51,7 +55,14 @@
   function categoryLabel(tier, seg) {
     if (tier === "flow") return "Flow Control";
     var base = seg ? (CATEGORY_LABELS[seg] || (seg.charAt(0).toUpperCase() + seg.slice(1))) : ROOT_CATEGORY;
-    return tier === "native" ? "Native: " + base : base;
+    if (tier === "native") return "Native: " + base;
+    // Generated nodes get their own bucket for the same reason the native tier does: an essgen/object/*
+    // node and a hand-written ess/object/* node would otherwise merge into one "Object" list, and the two
+    // are not interchangeable -- the hand-written ones are tuned (validated combo boxes, custom sizes)
+    // while these are derived uniformly from the function signature. Keeping them apart also makes the
+    // coverage obvious: the "More: " categories are exactly what nobody has hand-written a node for yet.
+    if (tier === "essgen") return "More: " + base;
+    return base;
   }
 
   // [titleBarColor, bodyColor] per super-group -- cool tones for Ess, warm for Native (Object keeps its
@@ -72,7 +83,11 @@
     nativeCamera:  ["#5a5a23", "#2b2b10"],
     nativeHud:     ["#5a2d3a", "#2b151b"],
     nativeSound:   ["#6b3a13", "#331b09"],
-    flow:          ["#1a5a6b", "#0c2a32"]
+    flow:          ["#1a5a6b", "#0c2a32"],
+    // The generated tier. One muted slate for all ~40 of its categories rather than a colour each: these
+    // are the functions nobody has hand-tuned a node for, so they should read as a quieter shelf you go to
+    // when the curated groups do not have what you need -- not as forty new things competing for attention.
+    generated:     ["#3a3f4a", "#1b1e24"]
   };
   // Maps every categoryLabel() output to one of the groups above. A label with no entry here (e.g. a
   // brand-new node file introducing an uncategorized segment) is left with litegraph's plain default
@@ -95,7 +110,10 @@
       var cls = LiteGraph.registered_node_types[type];
       var parts = type.split("/");
       var label = categoryLabel(parts[0], parts.length > 2 ? parts[1] : null);
-      var group = GROUP_COLORS[CATEGORY_GROUP[label]];
+      // Every "More: *" label shares one group, so the generated tier needs no per-category entry in
+      // CATEGORY_GROUP -- otherwise adding an Ess namespace upstream would silently produce uncoloured
+      // nodes here until someone remembered to extend a map in this file.
+      var group = GROUP_COLORS[label.indexOf("More: ") === 0 ? "generated" : CATEGORY_GROUP[label]];
       if (!group) return;
       cls.color = group[0];
       cls.bgcolor = group[1];

@@ -111,6 +111,12 @@
 <script src="src/nodes-flow.js"></script>
 <script src="src/nodes-function.js"></script>
 <script src="src/nodes-function-calls.js"></script>
+<!-- Vendored from mercs2-lua-essentials (see vendor.json): a node type for every public Ess function,
+     registered under essgen/ so it cannot collide with the hand-written ess/ nodes above. Then the dedupe
+     drops any generated node a hand-written one already covers. Both MUST come before palette.js, which
+     trims the registry and builds the sidebar from whatever survives. -->
+<script src="vendor/ess-nodes.generated.js"></script>
+<script src="src/essgen-dedupe.js"></script>
 <script src="src/palette.js"></script>
 <script src="src/samples.js"></script>
 <script src="src/compiler.js"></script>
